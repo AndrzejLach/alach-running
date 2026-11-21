@@ -25,6 +25,7 @@ jobs:
           d="${FTP_DIR:-.}"
           set +e
           lftp -d -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" > lftp.log 2>&1 <<LFTP
+          set ftp:use-feat false
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set net:max-retries 2
