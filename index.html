@@ -2,11 +2,11 @@
 /* phones: name, intro and goal first, then the map, then the rest of the column */
 @media (max-width:760px){
   html body .side{display:contents}
-  html body .side>div:first-child{order:1;position:static;margin:0;padding:18px 20px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
-  html body .goal{order:2;margin:0!important;padding:18px 20px 16px!important;background:var(--panel)}
-  html body #infoBox{order:3;margin:0;padding:12px 20px;background:var(--panel)}
-  html body .mapwrap{order:4}
-  html body .side>section,html body .side>.note{order:5;margin:0;padding-left:20px;padding-right:20px;background:var(--panel)}
+  html body .side>div:first-child{order:0;position:static;margin:0;padding:18px 20px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  html body .goal{order:3;margin:0!important;padding:18px 20px 16px!important;background:var(--panel)}
+  html body #infoBox{order:6;margin:0;padding:12px 20px;background:var(--panel)}
+  html body .mapwrap{order:1}
+  html body .side>section,html body .side>.note{order:7;margin:0;padding-left:20px;padding-right:20px;background:var(--panel)}
   html body .side>section:first-of-type{padding-top:20px;border-top:0}
   html body .side>.note{padding-bottom:28px}
 }
@@ -20,9 +20,9 @@
 .latest small{font-weight:500;margin-left:6px;white-space:nowrap}
 .latest small.up{color:#2f8f4e}.latest small.down{color:#c0392b}
 @media (max-width:760px){
-  html body .intro{order:1;margin:0;padding:0 20px 16px;background:var(--panel)}
+  html body .intro{order:2;margin:0;padding:16px 20px 16px;background:var(--panel)}
   html body .side>div:first-child{border-bottom:0}
-  html body .latest{order:2;margin:0;padding:0 20px 14px;background:var(--panel)}
+  html body .latest{order:4;margin:0;padding:0 20px 14px;background:var(--panel)}
 }
 
 .alsovisited{margin:14px 0 0;font-size:13px;line-height:1.9;color:var(--muted)}
@@ -37,7 +37,7 @@ html body .alsovisited .place.visited img{vertical-align:-2px}
 .race-name{font-size:13px;font-weight:600;color:var(--fg);text-decoration:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .race-name:hover{text-decoration:underline}
 .race-when{font-size:12px;color:var(--muted);margin-top:2px}
-@media (max-width:760px){html body .race{order:2;margin:0;padding:6px 20px 12px;background:var(--panel)}}
+@media (max-width:760px){html body .race{order:5;margin:0;padding:6px 20px 12px;background:var(--panel)}}
 </style></head><body>
 <title>AlachRunning – every run since 2013 on a map</title>
 <meta name="description" content="Andrzej Lach's running map: every run since 2013 – over 3,000 runs and 32,000 km across 17 countries – on the way to running the length of the equator.">
@@ -1111,9 +1111,12 @@ function renderIntro() {
     `<div><span>${y} so far</span><b>${fmt(now)} km <small class="${diff >= 0 ? 'up' : 'down'}">${diff >= 0 ? '▲' : '▼'} ${fmt(Math.abs(diff), 0)}% vs ${y - 1}</small></b></div>`;
 }
 // next race: countdown and build-up, shown until the day after the race
-const NEXT_RACE = { name: 'Garmin Ultra Race Gdańsk', km: 53, date: '2026-12-05', where: 'Trójmiejski Park Krajobrazowy', url: 'https://ultrarace.pl/gdansk/' };
+// Next race strip: set to e.g. { name: 'Race name', km: 53, date: '2026-12-05', where: 'Place', url: 'https://…' } to show it again.
+const NEXT_RACE = null;
 function renderRace() {
-  const el = document.getElementById('race'), r = NEXT_RACE, day = new Date(r.date + 'T00:00:00');
+  const el = document.getElementById('race'), r = NEXT_RACE;
+  if (!r) { el.hidden = true; return; }
+  const day = new Date(r.date + 'T00:00:00');
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const days = Math.round((day - today) / 864e5);
   if (days < -1) { el.hidden = true; return; }
