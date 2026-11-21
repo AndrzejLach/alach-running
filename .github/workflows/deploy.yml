@@ -1,22 +1,36 @@
-# Copies the running page to alach.pl/running/ whenever one of its files changes on main.
-# Uploads only the page files listed in FILES; sat/ and avatar.jpg on the server are left alone.
-# Upload: FTP with TLS. Secrets: FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, optional FTP_DIR
-# (Settings → Secrets and variables → Actions). The target folder is found by looking for sat/index.json,
-# so the page can never be written anywhere else.
+# Uploads what changed in each push to main to alach.pl, over FTP with TLS.
+#   home/x    -> public_html/alach/x
+#   astro/x   -> public_html/alach/astro/x
+#   running/x -> public_html/alach/running/x
+# Only files added or changed in the push are uploaded; each folder's index.html goes last.
+# Nothing is deleted on the server. A commit message containing [no upload] skips the upload.
+# Secrets: FTP_SERVER, FTP_USERNAME, FTP_PASSWORD.
 name: Deploy to alach.pl
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'runs.js', 'land.js', 'land-fine.json', 'flags.js', 'stars.js', 'moon.jpg', 'og.jpg', '.github/workflows/deploy.yml']
-  workflow_dispatch:
+    paths: ['home/**', 'astro/**', 'running/**']
 concurrency: deploy
-env:
-  FILES: land.js land-fine.json flags.js stars.js moon.jpg og.jpg runs.js index.html   # index.html last, so it never points at files not yet uploaded
 jobs:
   deploy:
+    if: ${{ !contains(github.event.head_commit.message, '[no upload]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: List changed files
+        id: files
+        run: |
+          before='${{ github.event.before }}'
+          if ! git cat-file -e "$before^{commit}" 2>/dev/null; then echo "::error::cannot tell what changed (no previous commit)"; exit 1; fi
+          git diff --name-only --no-renames --diff-filter=AM "$before" '${{ github.sha }}' -- home astro running > changed.txt
+          # index.html files last
+          { grep -v '/index\.html$' changed.txt; grep '/index\.html$' changed.txt; } > ordered.txt || true
+          echo "::notice title=to upload::$(wc -l < ordered.txt) files: $(head -c 900 ordered.txt | tr '\n' ' ')"
+          gone=$(git diff --name-only --no-renames --diff-filter=D "$before" '${{ github.sha }}' -- home astro running | tr '\n' ' ')
+          [ -n "$gone" ] && echo "::warning title=deleted in repo, left on server::$gone"
+          true
       - name: Install lftp
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
       - name: Upload over FTP with TLS
@@ -24,15 +38,21 @@ jobs:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_DIR: ${{ secrets.FTP_DIR }}
         run: |
           ftp() { lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" -e "set ftp:use-feat false; set ftp:ssl-force true; set ftp:ssl-protect-data true; set net:max-retries 2; set net:timeout 30; $1; bye"; }
-          target=""
-          for cand in "${FTP_DIR:-.}" "domains/pleksik.linuxpl.info/public_html/alach/running" "."; do
-            if ftp "cls -1 '$cand/sat/index.json'" >/dev/null 2>&1; then target="$cand"; break; fi
+          base=""
+          for cand in "domains/pleksik.linuxpl.info/public_html/alach" "."; do
+            if ftp "cls -1 '$cand/running/sat/index.json'" >/dev/null 2>&1; then base="$cand"; break; fi
           done
-          if [ -z "$target" ]; then echo "::error::could not find the running page folder (no sat/index.json) on the FTP account"; exit 1; fi
-          echo "::notice title=target::$target"
-          puts=""; for f in $FILES; do puts="$puts put $f;"; done
-          ftp "cd '$target'; $puts cls -l $FILES" 2>&1 | tail -n 10 | tr '\n' '|' | sed 's/^/::notice title=uploaded::/'; echo
+          [ -n "$base" ] || { echo "::error::could not find the alach.pl folder (no running/sat/index.json) on the FTP account"; exit 1; }
+          [ -s ordered.txt ] || { echo "::notice::nothing to upload"; exit 0; }
+          cmds=""; dirs=""
+          while IFS= read -r f; do
+            rel="${f#*/}"; case "$f" in home/*) dest="$base/$rel";; *) dest="$base/$f";; esac
+            d=$(dirname "$dest"); case " $dirs " in *" $d "*) ;; *) cmds="$cmds mkdir -pf '$d';"; dirs="$dirs $d";; esac
+            cmds="$cmds put '$f' -o '$dest';"
+          done < ordered.txt
+          ftp "$cmds" 2>&1 | tail -n 5
           test "${PIPESTATUS[0]}" -eq 0
+          last=$(tail -n 1 ordered.txt); rel="${last#*/}"; case "$last" in home/*) dest="$base/$rel";; *) dest="$base/$last";; esac
+          echo "::notice title=uploaded::$(wc -l < ordered.txt) files; last: $(ftp "cls -l '$dest'" 2>&1 | tail -n 1)"
