@@ -269,6 +269,17 @@ html body .goal .track{height:10px}
 html body .goal{margin-left:calc(-1 * max(20px, env(safe-area-inset-left, 0px)));margin-right:-20px;border-radius:0;border-left:0;border-right:0;padding:18px 20px 16px;padding-left:max(20px, env(safe-area-inset-left, 0px))}
 @media (max-width:760px){html body .goal{margin-right:calc(-1 * max(20px, env(safe-area-inset-right, 0px)));padding-right:max(20px, env(safe-area-inset-right, 0px))}}
 html body .goal .row{font-size:13px!important}
+html body .intro,html body .latest{background:var(--bg);margin-left:calc(-1 * max(20px, env(safe-area-inset-left, 0px)));margin-right:-20px;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:20px}
+html body .intro{margin-top:0;margin-bottom:0;padding-top:16px;padding-bottom:4px}
+html body .goal{margin-bottom:0;border-top:0}
+html body .latest{margin-top:0;margin-bottom:18px;padding-top:4px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+html body .latest div:last-child{border-bottom:0}
+html body .latest small.rate{color:var(--muted);font-weight:500}
+@media (max-width:760px){
+  html body .intro,html body .latest{margin:0;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:max(20px, env(safe-area-inset-right, 0px))}
+  html body .intro{padding-top:18px;padding-bottom:2px}
+  html body .latest{padding-top:4px;padding-bottom:8px}
+}
 .goal .eta{display:flex;flex-direction:column;gap:1px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted)}
 .goal .eta strong{color:var(--fg);font-weight:600}
 .goal .eta{align-items:center;text-align:center}
@@ -1108,6 +1119,7 @@ function renderIntro() {
   const ytd = yr => all.filter(w => w.d.slice(0, 4) === String(yr) && w.d.slice(5) <= md).reduce((a, w) => a + (w.km || 0), 0);
   const now = ytd(y), prev = ytd(y - 1), diff = prev ? (now - prev) / prev * 100 : 0;
   document.getElementById('latest').innerHTML =
+    `<div><span>Finish ≈</span><b title="At the pace of the last 12 months">${GP.eta} <small class="rate">at ${fmt(GP.yearKm)} km/year</small></b></div>` +
     `<div><span>Latest run</span><b>${fd(last.d)} · ${fmt(last.km || 0, 1)} km${last.place ? ' · ' + last.place : ''}</b></div>` +
     `<div><span>${y} so far</span><b>${fmt(now)} km <small class="${diff >= 0 ? 'up' : 'down'}">${diff >= 0 ? '▲' : '▼'} ${fmt(Math.abs(diff), 0)}% vs ${y - 1}</small></b></div>`;
 }
@@ -1149,7 +1161,8 @@ function renderGoal() { // lifetime progress toward one lap of the equator, inde
       <g class="arc-ticks"></g><circle class="arc-dot" r="4.5" cx="8" cy="38"/><g class="arc-runner" transform="translate(8 32)"><path class="halo"/><path class="body"/><circle class="head" r="2.3"/></g>
     </svg>
     <div class="row"><span><strong>${fmt(done)} km</strong> run</span><span><strong>${fmt(left)} km</strong> to go</span></div>
-    <div class="eta"><span>Finish ≈ <strong>${eta ? eta.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : '–'}</strong></span><span>at ${fmt(yearKm)} km a year (last 12 months)</span></div>`;
+`;
+  GP.eta = eta ? eta.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '–'; GP.yearKm = yearKm;
   placeArc(pct);
   miniGlobeStart();
 }
