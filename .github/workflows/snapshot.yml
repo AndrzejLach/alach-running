@@ -1,4 +1,4 @@
-# One-off: copies the live home page and /astro/ from alach.pl into the "live" branch,
+# One-off (re-run by editing this file): copies the live home page and /astro/ from alach.pl into the "live" branch,
 # so the repository starts from exactly what is on the server. Read-only on the server.
 name: Snapshot live site
 on:
@@ -24,10 +24,8 @@ jobs:
           ftp() { lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" -e "set ftp:use-feat false; set ftp:ssl-force true; set ftp:ssl-protect-data true; set net:max-retries 2; set net:timeout 30; $1; bye"; }
           base=domains/pleksik.linuxpl.info/public_html/alach
           ftp "cls -1 '$base/running/sat/index.json'" >/dev/null || { echo "::error::running page not found under $base"; exit 1; }
-          echo "::notice title=base listing::$(ftp "cls -l '$base'" 2>&1 | tr '\n' '|')"
-          echo "::notice title=astro listing::$(ftp "cls -l '$base/astro'" 2>&1 | tr '\n' '|')"
           mkdir -p snap/home snap/astro
-          ftp "mirror --no-recursion --parallel=4 '$base' snap/home" >/dev/null
+          ftp "lcd snap/home; get '$base/index.html'; get '$base/favicon.ico'" >/dev/null
           ftp "mirror --parallel=6 '$base/astro' snap/astro" >/dev/null
           echo "::notice title=downloaded::$(du -sh snap/home snap/astro | tr '\n' '|') files: $(find snap -type f | wc -l)"
           echo "::notice title=big files::$(find snap -type f -size +50M -printf '%s %p|')"
