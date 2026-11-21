@@ -1,5 +1,6 @@
 # Copies the running page to alach.pl/running/ whenever index.html or runs.js changes on main.
 # Only files tracked here are uploaded; sat/ and avatar.jpg on the server are left alone.
+# Secrets: FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, FTP_DIR (Settings → Secrets and variables → Actions).
 name: Deploy to alach.pl
 on:
   push:
