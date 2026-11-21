@@ -1,0 +1,38 @@
+# One-off: copies the live home page and /astro/ from alach.pl into the "live" branch,
+# so the repository starts from exactly what is on the server. Read-only on the server.
+name: Snapshot live site
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/snapshot.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+      - name: Download home and astro
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          ftp() { lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" -e "set ftp:use-feat false; set ftp:ssl-force true; set ftp:ssl-protect-data true; set net:max-retries 2; set net:timeout 30; $1; bye"; }
+          base=domains/pleksik.linuxpl.info/public_html/alach
+          ftp "cls -1 '$base/running/sat/index.json'" >/dev/null || { echo "::error::running page not found under $base"; exit 1; }
+          echo "::notice title=base listing::$(ftp "cls -l '$base'" 2>&1 | tr '\n' '|')"
+          echo "::notice title=astro listing::$(ftp "cls -l '$base/astro'" 2>&1 | tr '\n' '|')"
+          mkdir -p snap/home snap/astro
+          ftp "mirror --no-recursion --parallel=4 '$base' snap/home" >/dev/null
+          ftp "mirror --parallel=6 '$base/astro' snap/astro" >/dev/null
+          echo "::notice title=downloaded::$(du -sh snap/home snap/astro | tr '\n' '|') files: $(find snap -type f | wc -l)"
+          echo "::notice title=big files::$(find snap -type f -size +50M -printf '%s %p|')"
+      - name: Commit to branch live
+        run: |
+          cd snap && git init -q -b live && git add -A
+          git -c user.name=snapshot -c user.email=noreply@github.com commit -qm "Live alach.pl home and astro, $(date -u +%F)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" live
