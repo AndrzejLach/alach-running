@@ -1,0 +1,27 @@
+# Copies the running page to alach.pl/running/ whenever index.html or runs.js changes on main.
+# Only files tracked here are uploaded; sat/ and avatar.jpg on the server are left alone.
+name: Deploy to alach.pl
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'runs.js', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+concurrency: deploy
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload changed files over FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          server-dir: ${{ secrets.FTP_DIR }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            README.md
