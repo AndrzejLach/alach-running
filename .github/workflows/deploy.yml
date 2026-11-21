@@ -1,5 +1,5 @@
 # Copies the running page to alach.pl/running/ whenever index.html or runs.js changes on main.
-# Only files tracked here are uploaded; sat/ and avatar.jpg on the server are left alone.
+# Only index.html and runs.js are uploaded; sat/ and avatar.jpg on the server are left alone.
 # Secrets: FTP_SERVER (host only), FTP_USERNAME (full login), FTP_PASSWORD, FTP_DIR — Settings → Secrets and variables → Actions.
 name: Deploy to alach.pl
 on:
@@ -13,24 +13,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Work out the target folder
-        id: dir
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+      - name: Upload over FTP with TLS
         env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_DIR: ${{ secrets.FTP_DIR }}
         run: |
-          d="${FTP_DIR:-./}"
-          case "$d" in */) ;; *) d="$d/";; esac
-          echo "path=$d" >> "$GITHUB_OUTPUT"
-      - name: Upload changed files over FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          server-dir: ${{ steps.dir.outputs.path }}
-          exclude: |
-            **/.git*
-            **/.git*/**
-            .github/**
-            README.md
+          d="${FTP_DIR:-.}"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" <<LFTP
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set net:max-retries 2
+          set net:timeout 30
+          cd "$d"
+          put index.html
+          put runs.js
+          ls -l index.html runs.js
+          bye
+          LFTP
