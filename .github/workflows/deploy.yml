@@ -38,6 +38,6 @@ jobs:
           if [ $rc -eq 0 ]; then
             ssh -p "$SSH_PORT" -i ~/.ssh/deploy_key -o BatchMode=yes "$SSH_USER@$SSH_HOST" "ls -l $TARGET_DIR/index.html $TARGET_DIR/runs.js" >> scp.log 2>&1
           fi
-          grep -E 'Authenticat|denied|Permission|closed|Connection|subsystem|scp:|sftp|No such|Transferred|Exit status|debug1: Offering|accepted|refused|rsa|-rw' scp.log | tail -n 30 | tr '\n' '|' | sed 's/^/::notice title=upload log::/'; echo
+          grep -v -i 'identity file' scp.log | tail -n 30 | tr '\n' '|' | sed 's/^/::notice title=upload log::/'; echo
           rm -f ~/.ssh/deploy_key
           exit $rc
