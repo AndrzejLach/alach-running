@@ -23,7 +23,8 @@ jobs:
           FTP_DIR: ${{ secrets.FTP_DIR }}
         run: |
           d="${FTP_DIR:-.}"
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" <<LFTP
+          set +e
+          lftp -d -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" > lftp.log 2>&1 <<LFTP
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set net:max-retries 2
@@ -34,3 +35,7 @@ jobs:
           ls -l index.html runs.js
           bye
           LFTP
+          rc=$?
+          # show the last lines (passwords are masked by GitHub) as an annotation, so failures are readable
+          grep -v -i 'PASS ' lftp.log | tail -n 25 | tr '\n' '|' | sed 's/^/::notice title=lftp log::/'; echo
+          exit $rc
