@@ -453,6 +453,7 @@ const filtered = () => W.filter(w => (st.year == null || w.yr === st.year) && (s
 function resize() {
   dpr = window.devicePixelRatio || 1;
   const r = cv.getBoundingClientRect(); cw = r.width; ch = r.height;
+  cv.parentElement.classList.toggle('narrow', cw < 900);   // narrow map: credits behind (i), no hint, Moon block at the bottom
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   // the page can open before the map has a size (e.g. inside a viewer); set up the world view once it has one
   if (cw && ch && !(view.z >= 200 && isFinite(view.z))) fitWorld();
@@ -1050,8 +1051,7 @@ function drawMoonInset(moon, sun, dist, lit) {
     paintMoon(g, S / 2, S / 2, S / 2 - 1, right, up, toward, a, sun);
     moonInset = { t: minute, c };
   }
-  // phones: credits sit behind the (i) button, so the inset can use the bottom edge
-  const x = 16, y = innerWidth <= 760 ? ch - S - 14 : ch - 52 - S - 18;
+  const x = 16, y = ch - S - 14;   // bottom-left corner of the map view
   ctx.drawImage(moonInset.c, x, y, S, S);
   ctx.font = '600 12px Geist, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = css('--fg'); ctx.fillText('Moon tonight', x + S + 10, y + S / 2 - 4);
   ctx.font = '500 11px Geist, system-ui, sans-serif'; ctx.fillStyle = css('--muted'); ctx.fillText(`${lit}% lit · ${fmt(dist)} km`, x + S + 10, y + S / 2 + 12);
@@ -1366,6 +1366,13 @@ if (!RM) { let last = 0; const loop = now => { requestAnimationFrame(loop); if (
 <style>
 /* phones: credits hidden behind an (i) button, shown on tap */
 .attr-i{display:none}
+/* narrow desktop map (under 900 px): same (i) button, hint hidden */
+.narrow .hint{display:none}
+.narrow .attr-i{display:grid;place-items:center;position:absolute;right:8px;bottom:8px;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:var(--panel);color:var(--muted);opacity:.9;cursor:pointer;z-index:3}
+.narrow .attr-i svg{width:16px;height:16px}
+.narrow .attr-i[aria-expanded="true"]{color:var(--fg)}
+html body .narrow .attr{display:none;top:auto;bottom:42px;right:8px;max-width:calc(100% - 16px);font-size:11px;line-height:1.35;padding:6px 8px;border-radius:8px;opacity:1;z-index:3}
+html body .narrow .attr.open{display:block}
 @media (max-width:760px){
   .attr-i{display:grid;place-items:center;position:absolute;right:8px;bottom:8px;width:28px;height:28px;padding:0;border:0;border-radius:50%;
     background:var(--panel);color:var(--muted);opacity:.9;cursor:pointer;z-index:3}
