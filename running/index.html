@@ -279,6 +279,7 @@ html body .latest small.rate{color:var(--muted);font-weight:500}
   html body .intro,html body .latest{margin:0;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:max(20px, env(safe-area-inset-right, 0px))}
   html body .intro{padding-top:18px;padding-bottom:2px}
   html body .latest{padding-top:4px;padding-bottom:8px}
+  html body #statTabs{margin-top:20px}
 }
 .goal .eta{display:flex;flex-direction:column;gap:1px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted)}
 .goal .eta strong{color:var(--fg);font-weight:600}
@@ -317,7 +318,8 @@ html body .note{margin-top:14px}
     <div class="scale" id="scale"></div>
     <div class="hint" id="hint"></div>
     <div class="here" id="here" hidden></div>
-    <div class="attr">Imagery: <a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless</a> by EOX (modified Copernicus Sentinel data 2021), CC BY-NC-SA 4.0 · Stars: <a href="https://github.com/ofrohn/d3-celestial" target="_blank" rel="noopener">d3-celestial</a> (BSD)</div>
+    <button type="button" class="attr-i" id="attrI" aria-label="Map and data credits" aria-expanded="false" aria-controls="attrBox"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.9v.1"/></svg></button>
+    <div class="attr" id="attrBox">Imagery: <a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless</a> by EOX (modified Copernicus Sentinel data 2021), CC BY-NC-SA 4.0 · Stars: <a href="https://github.com/ofrohn/d3-celestial" target="_blank" rel="noopener">d3-celestial</a> (BSD)</div>
   </div>
   <aside class="side">
     <div>
@@ -889,7 +891,7 @@ const up = e => {
 };
 cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
 function zoomAt(px, py, f, quiet) {
-  if (st.mode === 'globe') { globe.k = Math.max(0.005, Math.min(2.5, globe.k * f)); if (!quiet) req(); return; }
+  if (st.mode === 'globe') { globe.k = Math.max(0.25, Math.min(2.5, globe.k * f)); /* never smaller than half the view */ if (!quiet) req(); return; }
   const x = view.cx + (px - cw / 2) / view.z, y = view.cy + (py - ch / 2) / view.z;
   view.z = Math.max(200, Math.min(4e7, view.z * f));
   view.cx = x - (px - cw / 2) / view.z; view.cy = y - (py - ch / 2) / view.z; if (!quiet) req();
@@ -1048,13 +1050,14 @@ function drawMoonInset(moon, sun, dist, lit) {
     paintMoon(g, S / 2, S / 2, S / 2 - 1, right, up, toward, a, sun);
     moonInset = { t: minute, c };
   }
-  const x = 16, y = ch - 52 - S - 18;
+  // phones: credits sit behind the (i) button, so the inset can use the bottom edge
+  const x = 16, y = innerWidth <= 760 ? ch - S - 14 : ch - 52 - S - 18;
   ctx.drawImage(moonInset.c, x, y, S, S);
   ctx.font = '600 12px Geist, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = css('--fg'); ctx.fillText('Moon tonight', x + S + 10, y + S / 2 - 4);
   ctx.font = '500 11px Geist, system-ui, sans-serif'; ctx.fillStyle = css('--muted'); ctx.fillText(`${lit}% lit · ${fmt(dist)} km`, x + S + 10, y + S / 2 + 12);
   // lifetime distance against the average Earth–Moon distance (384,400 km)
   const toMoon = (GP.done || 0) / 384400 * 100;
-  ctx.font = '600 11px Geist, system-ui, sans-serif'; ctx.fillStyle = `rgb(${css('--track')})`; ctx.fillText(`You've run ${fmt(toMoon, 1)}% of the way to the Moon`, x + S + 10, y + S / 2 + 28);
+  ctx.font = '600 11px Geist, system-ui, sans-serif'; ctx.fillStyle = `rgb(${css('--track')})`; ctx.fillText(`I've run ${fmt(toMoon, 1)}% of the way to the Moon`, x + S + 10, y + S / 2 + 28);
 }
 function drawMoon(front) {
   const { moon, sun, dist } = moonSun(Date.now());
@@ -1360,4 +1363,23 @@ if (!RM) { let last = 0; const loop = now => { requestAnimationFrame(loop); if (
 </script>
 
 
+<style>
+/* phones: credits hidden behind an (i) button, shown on tap */
+.attr-i{display:none}
+@media (max-width:760px){
+  .attr-i{display:grid;place-items:center;position:absolute;right:8px;bottom:8px;width:28px;height:28px;padding:0;border:0;border-radius:50%;
+    background:var(--panel);color:var(--muted);opacity:.9;cursor:pointer;z-index:3}
+  .attr-i svg{width:16px;height:16px}
+  .attr-i[aria-expanded="true"]{color:var(--fg)}
+  html body .attr{display:none;bottom:42px;right:8px;max-width:calc(100% - 16px);font-size:11px;line-height:1.35;padding:6px 8px;border-radius:8px;opacity:1;z-index:3}
+  html body .attr.open{display:block}
+}
+</style>
+<script>
+(()=>{const b=document.getElementById('attrI'),box=document.getElementById('attrBox');if(!b||!box)return;
+const set=o=>{box.classList.toggle('open',o);b.setAttribute('aria-expanded',o)};
+b.addEventListener('click',e=>{e.stopPropagation();set(!box.classList.contains('open'))});
+document.addEventListener('pointerdown',e=>{if(box.classList.contains('open')&&!box.contains(e.target)&&e.target!==b&&!b.contains(e.target))set(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)});})();
+</script>
 </body></html>
