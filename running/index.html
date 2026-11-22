@@ -18,7 +18,7 @@
 .latest div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
 .latest span{color:var(--muted);white-space:nowrap}
 .latest b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
-.latest small{font-weight:500;margin-left:6px;white-space:nowrap}
+.latest small{font-weight:500;margin-right:6px;white-space:nowrap}
 .latest small.up{color:#2f8f4e}.latest small.down{color:#c0392b}
 @media (max-width:760px){
   html body .intro{order:2;margin:0;padding:16px 20px 16px;background:var(--panel)}
@@ -76,7 +76,7 @@ html body .alsovisited .place.visited img{vertical-align:-2px}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
 .app{display:flex;height:100%;min-height:0}
-.mapwrap{position:relative;flex:1;min-width:0;background:var(--sea)}
+.mapwrap{position:relative;flex:1;min-width:0;background:var(--sea);overflow:hidden}
 canvas#map{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 canvas#map.drag{cursor:grabbing}
 .side{width:360px;flex:none;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);
@@ -515,6 +515,7 @@ function drawSat(vx0, vy0, vx1, vy1) {
 // ---------- globe (orthographic) ----------
 const gR = () => Math.min(cw, ch) * globe.k;
 function gProj(lon, lat) { // returns [x, y, visible]
+  if (MO) return morphProj(lon, lat);
   const R = gR(), l0 = globe.lon * RAD, p0 = globe.lat * RAD, l = lon * RAD, p = lat * RAD;
   const cosc = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l - l0);
   let x = Math.cos(p) * Math.sin(l - l0), y = Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0);
@@ -533,14 +534,15 @@ function gInvert(px, py) {
 function drawGlobe() {
   const R = gR();
   drawSpace(R);
-  ctx.beginPath(); ctx.arc(cw / 2, ch / 2, R, 0, 7); ctx.fillStyle = css('--sea'); ctx.fill();
+  if (MO) { ctx.globalAlpha = smooth(MO.e) ** 2; ctx.fillStyle = css('--sea'); ctx.fillRect(0, 0, cw, ch); ctx.globalAlpha = 1; }
+  if (MO) seaMesh(); else { ctx.beginPath(); globeOutline(R); ctx.fillStyle = css('--sea'); ctx.fill(); }
   // graticule
   ctx.beginPath();
   for (let lo = -180; lo < 180; lo += 30) { let on = false; for (let la = -90; la <= 90; la += 3) { const [x, y, v] = gProj(lo, la); if (v) { on ? ctx.lineTo(x, y) : ctx.moveTo(x, y); on = true; } else on = false; } }
   for (let la = -60; la <= 60; la += 30) { let on = false; for (let lo = -180; lo <= 180; lo += 3) { const [x, y, v] = gProj(lo, la); if (v) { on ? ctx.lineTo(x, y) : ctx.moveTo(x, y); on = true; } else on = false; } }
   ctx.strokeStyle = css('--coast'); ctx.globalAlpha = .45; ctx.lineWidth = .7; ctx.stroke(); ctx.globalAlpha = 1;
   // land
-  ctx.save(); ctx.beginPath(); ctx.arc(cw / 2, ch / 2, R, 0, 7); ctx.clip();
+  ctx.save(); if (!MO) { ctx.beginPath(); globeOutline(R); ctx.clip(); }   /* while morphing, hidden points already sit on the edge */
   ctx.beginPath();
   for (const r of RAW_COARSE) {
     let anyVis = false; const pts = [];
@@ -558,12 +560,12 @@ function drawGlobe() {
     ctx.fillStyle = `rgba(${tcc},.12)`; ctx.fill(); ctx.strokeStyle = `rgba(${tcc},.45)`; ctx.lineWidth = .9; ctx.stroke(); }
   visitedCountryPath(r => { let vis = false; const pts = []; for (let i = 0; i < r.length; i += 2) { const q = gProj(r[i+1] / 1e3, r[i] / 1e3); pts.push(q); if (q[2]) vis = true; } if (vis) { pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); } });
   ctx.fillStyle = css('--visit'); ctx.fill(); ctx.setLineDash([3, 3]); ctx.strokeStyle = css('--visit-line'); ctx.lineWidth = .9; ctx.stroke(); ctx.setLineDash([]);
-  ctx.restore(); ctx.save(); drawEquatorGlobe();
+  ctx.restore(); ctx.save(); if (!MO) drawEquatorGlobe();   /* the progress line sits out the globe/map transition */
   ctx.restore();
-  ctx.beginPath(); ctx.arc(cw / 2, ch / 2, R, 0, 7); ctx.strokeStyle = css('--coast'); ctx.lineWidth = 1.2; ctx.stroke();
+  if (!MO || MO.e < .5) { ctx.beginPath(); globeOutline(R); ctx.strokeStyle = css('--coast'); ctx.lineWidth = 1.2; ctx.globalAlpha = MO ? 1 - 2 * MO.e : 1; ctx.stroke(); ctx.globalAlpha = 1; }
   drawClusters(buildClusters(p => { const q = gProj(p.lon, p.lat); return q[2] ? q : null; }), false);
   drawVisited(v => { const q = gProj(v.lon, v.lat); return q[2] ? q : null; });
-  drawMoon(true);
+  if (!MO) drawMoon(true);
   document.getElementById('scale').hidden = true;   // centre coordinates mean nothing to visitors
 }
 const markerShown = p => p.span * view.z < 160;
@@ -694,12 +696,109 @@ function flyTo(lon, lat, done) {
     if (t < T1) { const e = ease(t / T1); globe.lon = s.lon + dl * e; globe.lat = s.lat + (lat - s.lat) * e; }
     else { globe.lon = lon; globe.lat = lat; globe.k = s.k * Math.pow(6, ease(Math.min(1, (t - T1) / T2))); }
     draw();
-    if (t < T1 + T2) anim = requestAnimationFrame(step); else { globe.k = s.k; done(); }
+    if (t < T1 + T2) anim = requestAnimationFrame(step); else { done(); globe.k = s.k; } // map takes over from the zoomed-in globe
+  };
+  anim = requestAnimationFrame(step);
+}
+// ---------- globe <-> map: the sphere flattens into the map (and rolls back up) ----------
+// MO.e = 0 is the globe, 1 is the map. In between the Earth sits on a sphere of growing radius R/s (s = 1 - e),
+// so it unrolls around the view centre, while positions blend towards Mercator.
+let MO = null, xf = null;
+const smooth = t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+function morphXY(c, sx, sy, lon, lat) { // c: angle from centre, (sx, sy): unit direction on screen (y up), lon/lat for Mercator
+  const s = 1 - MO.e, R = MO.R * MO.f, r = s < 1e-4 ? R * c : R / s * Math.sin(c * s);
+  const la = Math.max(-85, Math.min(85, lat));
+  const X2 = (mx(lon) - MO.vx) * MO.vz, Y2 = (my(la) - MO.vy) * MO.vz, w = smooth(MO.e);
+  return [cw / 2 + sx * r * (1 - w) + X2 * w, ch / 2 - sy * r * (1 - w) + Y2 * w];
+}
+function morphProj(lon, lat) {
+  const p0 = MO.cp * RAD, l = (lon - MO.cl) * RAD, p = lat * RAD;
+  const cosc = Math.max(-1, Math.min(1, Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l)));
+  let x = Math.cos(p) * Math.sin(l), y = Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l);
+  const d = Math.hypot(x, y); if (d > 1e-9) { x /= d; y /= d; } else { x = 0; y = 1; }
+  const c = Math.acos(cosc), s = 1 - MO.e, cb = s > .5 ? Math.PI / 2 / s : Math.PI;
+  if (c <= cb) return [...morphXY(c, x, y, lon, lat), true];
+  return [...morphEdge(x, y), false];          // hidden: pushed to the horizon in the same direction
+}
+function morphEdge(x, y) { // horizon point in screen direction (x, y)
+  const s = 1 - MO.e, cb = Math.min(Math.PI - 1e-3, s > .5 ? Math.PI / 2 / s : Math.PI - 1e-3), p0 = MO.cp * RAD;
+  const pb = Math.asin(Math.sin(p0) * Math.cos(cb) + Math.cos(p0) * Math.sin(cb) * y);
+  const lb = MO.cl + Math.atan2(x * Math.sin(cb) * Math.cos(p0), Math.cos(cb) - Math.sin(p0) * Math.sin(pb)) / RAD;
+  return morphXY(cb, x, y, ((lb + 540) % 360) - 180, pb / RAD);
+}
+function seaMesh() { // the visible Earth as a mesh of 10-degree cells, one fill per latitude band
+  ctx.fillStyle = css('--sea');
+  for (let la = -85; la < 85; la += 10) {
+    const la1 = Math.min(85, la + 10); ctx.beginPath();
+    for (let lo = -180; lo < 180; lo += 10) {
+      const a = gProj(lo, la), b = gProj(lo + 10, la), c = gProj(lo + 10, la1), d = gProj(lo, la1);
+      if (!(a[2] || b[2] || c[2] || d[2])) continue;
+      ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath();
+    }
+    ctx.fill(); ctx.strokeStyle = css('--sea'); ctx.lineWidth = 1; ctx.stroke();   // stroke closes hairline seams between cells
+  }
+}
+function globeOutline(R) { // the visible Earth's edge: a circle on the globe, a growing shape while morphing
+  if (!MO) { ctx.arc(cw / 2, ch / 2, R, 0, 7); return; }
+  for (let i = 0; i <= 160; i++) { const t = i / 160 * 2 * Math.PI, q = morphEdge(Math.sin(t), Math.cos(t)); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+  ctx.closePath();
+}
+function snapFade(ms) { // keep the current picture on top and fade it out (hides the hand-over between renderers)
+  if (!xf) { xf = document.createElement('canvas'); xf.setAttribute('aria-hidden', 'true'); xf.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;display:none'; cv.after(xf); }
+  xf.getAnimations().forEach(a => a.cancel());
+  xf.width = cv.width; xf.height = cv.height; xf.getContext('2d').drawImage(cv, 0, 0); xf.style.display = 'block';
+  xf.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: 'ease-out', fill: 'forwards' }).onfinish = () => { xf.style.display = 'none'; };
+}
+let mbuf = null;
+function drawMorph() { // the unrolling Earth, with the real map (satellite, tracks, markers) fading in over the last part
+  const a = Math.max(0, Math.min(1, (MO.e - .4) / .45)), fade = a * a * (3 - 2 * a);
+  if (fade > 0) {
+    const m = MO, sv = { cx: view.cx, cy: view.cy, z: view.z }, sm = st.mode;
+    view.cx = m.vx; view.cy = m.vy; view.z = m.vz; MO = null; st.mode = 'map'; st.noEq = true;
+    draw(); st.noEq = false;
+    MO = m; st.mode = sm; view.cx = sv.cx; view.cy = sv.cy; view.z = sv.z;
+    if (fade >= 1) return;
+    if (!mbuf) mbuf = document.createElement('canvas');
+    if (mbuf.width !== cv.width || mbuf.height !== cv.height) { mbuf.width = cv.width; mbuf.height = cv.height; }
+    const b = mbuf.getContext('2d'); b.clearRect(0, 0, mbuf.width, mbuf.height); b.drawImage(cv, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  drawGlobe();
+  if (fade > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = fade; ctx.drawImage(mbuf, 0, 0); ctx.globalAlpha = 1; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+}
+function morphTo(m) {
+  cancelAnimationFrame(anim);
+  // the globe end is the globe as it is now; the map end is the exact map view (the one asked for, or the current one going back),
+  // so nothing moves once the transition is over
+  const T = 1300, l0 = globe.lon, p0 = globe.lat, R = gR(), zEq = Math.max(200, 2 * Math.PI * R * Math.cos(p0 * RAD));
+  stopMotion();
+  const eq = { cx: mx(l0), cy: my(p0), z: zEq };
+  if (m === 'map') { st.mode = 'map'; MO = { e: 0, dir: 1, eq, tgt: { ...eq } }; }
+  else { MO = { e: 1, dir: -1, eq, tgt: { cx: view.cx, cy: view.cy, z: view.z } }; }
+  Object.assign(MO, { l0, p0, R, t0: performance.now(), dur: T });
+  const frame = () => { const k = smooth(MO.e), a = MO.eq, b = MO.tgt;
+    MO.vz = Math.exp(Math.log(a.z) + (Math.log(b.z) - Math.log(a.z)) * k); MO.f = MO.vz / a.z;
+    // move the centre in step with 1/zoom, so the travel happens while zoomed out and the view settles without drifting
+    const q = Math.abs(1 / a.z - 1 / b.z) < 1e-12 ? k : (1 / a.z - 1 / MO.vz) / (1 / a.z - 1 / b.z);
+    MO.vx = a.cx + (b.cx - a.cx) * q; MO.vy = a.cy + (b.cy - a.cy) * q;
+    // the curved Earth turns with the view, so its centre is always the map's centre
+    MO.cl = MO.vx * 360 - 180; MO.cp = Math.max(-85, Math.min(85, Math.atan(Math.sinh(Math.PI * (1 - 2 * MO.vy))) / RAD)); };
+  MO.frame = frame; frame();
+  const step = now => {
+    if (!MO) return;
+    const u = Math.min(1, (now - MO.t0) / MO.dur);
+    MO.e = MO.dir > 0 ? u : 1 - u; frame();
+    draw();
+    if (u < 1) { anim = requestAnimationFrame(step); return; }
+    const b = MO.tgt;
+    if (MO.dir < 0) st.mode = 'globe'; else { view.cx = b.cx; view.cy = b.cy; view.z = b.z; }
+    MO = null; draw();
   };
   anim = requestAnimationFrame(step);
 }
 function setMode(m) {
-  st.mode = m; setNav(m === 'globe' ? 'globeBtn' : (st.nav === 'globeBtn' ? 'mapBtn' : st.nav));
+  if (st.mode && st.mode !== m && st.animReady && !reduceMotion && cw && !MO) morphTo(m);
+  else { if (MO) { MO = null; cancelAnimationFrame(anim); } st.mode = m; } setNav(m === 'globe' ? 'globeBtn' : (st.nav === 'globeBtn' ? 'mapBtn' : st.nav));
   document.getElementById('hint').textContent = m === 'globe' ? 'Drag to spin · tap a place or any point to zoom in' : 'Tap a track for details · tap a dot to zoom to that place';
   req();
 }
@@ -710,18 +809,31 @@ function setNav(id) { // one highlighted menu button at a time
 function openPlace(p) {
   flyTo(p.lon, p.lat, () => {
     setMode('map');
-    if (p.list.length) fitList(p.list, p.list.length > 30 ? 0.02 : 0);
-    else { view.cx = mx(p.lon); view.cy = my(p.lat); view.z = 1.2e5; req(); } // no tracks: centre on the place
+    if (p.list.length) fitAround(p.lon, p.lat, p.list);
+    else animateView(mx(p.lon), my(p.lat), 1.2e5); // no tracks: centre on the place
   });
 }
+// zoom so the tapped place sits in the middle and its runs fit around it
+function fitAround(lon, lat, list, pad = 40) {
+  list = list.filter(w => w.bb); const cx = mx(lon), cy = my(lat);
+  if (!list.length) { animateView(cx, cy, 1.2e5); return; }
+  let hw = 0, hh = 0;
+  if (list.length > 30) { // ignore the odd far-away run: 2nd..98th percentile of start points
+    const xs = list.map(w => Math.abs(w.xy[0] - cx)).sort((a, b) => a - b), ys = list.map(w => Math.abs(w.xy[1] - cy)).sort((a, b) => a - b);
+    hw = xs[Math.floor(xs.length * .98)] + .0002; hh = ys[Math.floor(ys.length * .98)] + .0002;
+  } else for (const w of list) { hw = Math.max(hw, Math.abs(w.bb[0] - cx), Math.abs(w.bb[2] - cx)); hh = Math.max(hh, Math.abs(w.bb[1] - cy), Math.abs(w.bb[3] - cy)); }
+  const z = Math.max(200, Math.min((cw / 2 - pad) / Math.max(hw, 1e-6), (ch / 2 - pad) / Math.max(hh, 1e-6), 4e7));
+  animateView(cx, cy, z);
+}
 function openPoint(lon, lat) {
-  flyTo(lon, lat, () => { setMode('map'); view.cx = mx(lon); view.cy = my(lat); view.z = 2.5e5; req(); });
+  flyTo(lon, lat, () => { setMode('map'); animateView(mx(lon), my(lat), 2.5e5); });
 }
 
 function draw() {
   if (!cw) return;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
+  if (MO) return drawMorph();
   if (st.mode === 'globe') return drawGlobe();
   ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = css('--sea'); ctx.fillRect(0, 0, cw, ch);
@@ -751,7 +863,7 @@ function draw() {
     ctx.strokeStyle = `rgba(${tcc},.45)`; ctx.lineWidth = 1; ctx.stroke(); }
   visitedCountryPath(r => { for (let i = 0; i < r.length; i += 2) { const px = (mx(r[i+1] / 1e3) - view.cx) * view.z + cw / 2, py = (my(r[i] / 1e3) - view.cy) * view.z + ch / 2; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath(); });
   ctx.fillStyle = css('--visit'); ctx.fill(); ctx.setLineDash([3, 3]); ctx.strokeStyle = css('--visit-line'); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
-  if (view.z < 20000) drawEquatorFlat();
+  if (view.z < 20000 && !st.noEq) drawEquatorFlat();
 
   // tracks
   const list = filtered().filter(w => w.bb);
@@ -806,7 +918,7 @@ function stopMotion() { cancelAnimationFrame(M.raf); M.raf = 0; M.glide = M.zoom
 function tick() {
   M.raf = 0; const now = performance.now(); let busy = false;
   if (M.fly) {
-    const f = M.fly, u = Math.min(1, (now - f.t0) / f.dur), e = u < .5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+    const f = M.fly, u = Math.max(0, Math.min(1, (now - f.t0) / f.dur)), e = u < .5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
     view.cx = f.a.cx + (f.b.cx - f.a.cx) * e; view.cy = f.a.cy + (f.b.cy - f.a.cy) * e;
     view.z = Math.exp(Math.log(f.a.z) + (Math.log(f.b.z) - Math.log(f.a.z)) * e - f.bump * Math.sin(Math.PI * e));
     if (u < 1) busy = true; else M.fly = null;
@@ -831,6 +943,7 @@ function panBy(dx, dy) {
   else { view.cx -= dx / view.z; view.cy -= dy / view.z; }
 }
 function animateView(cx, cy, z) {
+  if (MO && MO.dir > 0) { MO.tgt = { cx, cy, z }; MO.frame(); return; }   // globe -> map: land exactly on this view
   if (RM || !cw || !(view.z > 0 && isFinite(view.z) && z > 0)) { view.cx = cx; view.cy = cy; view.z = z; req(); return; }
   const a = { cx: view.cx, cy: view.cy, z: view.z }, b = { cx, cy, z };
   const travel = Math.hypot(b.cx - a.cx, b.cy - a.cy) * Math.min(a.z, b.z) / Math.max(cw, ch); // screens to cross
@@ -1122,9 +1235,9 @@ function renderIntro() {
   const ytd = yr => all.filter(w => w.d.slice(0, 4) === String(yr) && w.d.slice(5) <= md).reduce((a, w) => a + (w.km || 0), 0);
   const now = ytd(y), prev = ytd(y - 1), diff = prev ? (now - prev) / prev * 100 : 0;
   document.getElementById('latest').innerHTML =
-    `<div><span>Finish ≈</span><b title="At the pace of the last 12 months">${GP.eta} <small class="rate">at ${fmt(GP.yearKm)} km/year</small></b></div>` +
+    `<div><span>Finish ≈</span><b title="At the pace of the last 12 months"><small class="rate">at ${fmt(GP.yearKm)} km/year</small> ${GP.eta}</b></div>` +
     `<div><span>Latest run</span><b>${fd(last.d)} · ${fmt(last.km || 0, 1)} km${last.place ? ' · ' + last.place : ''}</b></div>` +
-    `<div><span>${y} so far</span><b>${fmt(now)} km <small class="${diff >= 0 ? 'up' : 'down'}">${diff >= 0 ? '▲' : '▼'} ${fmt(Math.abs(diff), 0)}% vs ${y - 1}</small></b></div>`;
+    `<div><span>${y} so far</span><b><small class="${diff >= 0 ? 'up' : 'down'}">${diff >= 0 ? '▲' : '▼'} ${fmt(Math.abs(diff), 0)}% vs ${y - 1}</small> ${fmt(now)} km</b></div>`;
 }
 // next race: countdown and build-up, shown until the day after the race
 // Next race strip: set to e.g. { name: 'Race name', km: 53, date: '2026-12-05', where: 'Place', url: 'https://…' } to show it again.

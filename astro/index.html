@@ -1,4 +1,131 @@
-<!doctype html><html lang="en"><head><meta charset=utf8><meta name="description" content="Andrzej Lach astrophotography — planets, Moon, Sun, comets and deep sky from Gdynia, with an interactive sky map."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset=utf8>
+<script>/* dark by default; a saved choice wins */try{document.documentElement.dataset.theme=localStorage.getItem('alachsky-theme')||'dark'}catch(e){document.documentElement.dataset.theme='dark'}</script><meta name="description" content="Andrzej Lach astrophotography — planets, Moon, Sun, comets and deep sky from Gdynia, with an interactive sky map.">
+<link rel="canonical" href="https://www.alach.pl/astro/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.alach.pl/astro/">
+<meta property="og:site_name" content="alach.pl">
+<meta property="og:title" content="AlachAstro – planets, the Moon, deep sky &amp; comets">
+<meta property="og:description" content="Andrzej Lach astrophotography — planets, Moon, Sun, comets and deep sky from Gdynia, with an interactive sky map.">
+<meta property="og:image" content="https://www.alach.pl/astro/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AlachAstro: Saturn, Jupiter, comet Lemmon, a partial solar eclipse, the Moon and an aurora.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#121518"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+/* continuous grid: month label on the first photo of each month, teal edge marks where a month starts */
+.flow .grid{border-top:1px solid #000;grid-auto-flow:row}   /* keep strict date order (no back-filling of gaps) */
+@media (max-width:600px){.mlab{font-size:11.5px;padding:8px 10px 16px}.mlab em{display:none}}
+html body .plate .badge.new{left:auto;right:10px;background:var(--accent);color:#062421}
+html body .plate .badge.more ~ .badge.new{top:70px}
+.mlab{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:baseline;gap:7px;padding:9px 12px 18px;background:linear-gradient(to bottom,rgba(0,0,0,.7),rgba(0,0,0,0));color:rgba(255,255,255,.95);font:600 13px var(--f-display);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;overflow:hidden;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.mlab b{font-weight:700}
+.mlab em{font-style:normal;font-weight:500;font-size:11px;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.7)}
+.card.mfirst .plate::after{content:"";position:absolute;left:0;top:0;height:34px;width:1px;background:var(--accent);opacity:.9;z-index:3}
+@media (max-width:600px){.card.mfirst .plate::after{height:31px}}
+/* viewer: technical rows folded away */
+.lb .tech{margin-top:4px;border-top:1px solid var(--line,rgba(127,127,127,.25))}
+.lb .tech summary{cursor:pointer;padding:10px 0;font-size:13px;font-weight:600;color:var(--muted,#888);list-style:none}
+.lb .tech summary::-webkit-details-marker{display:none}
+.lb .tech summary::before{content:"▸";display:inline-block;width:14px;transition:transform .2s}
+.lb .tech[open] summary::before{transform:rotate(90deg)}
+
+/* sky map buttons: their name shows next to them on hover / keyboard focus */
+@media (hover:hover){
+  .skyctl button{position:relative}
+  .skyctl button:hover::after,.skyctl button:focus-visible::after{content:attr(aria-label);position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);white-space:nowrap;
+    background:rgba(5,7,15,.88);color:#fff;font:500 12px/1.3 var(--f-body,Geist,sans-serif);letter-spacing:0;padding:4px 8px;border-radius:5px;pointer-events:none;z-index:5}
+}
+
+html body .flow .card.wide.fit1{grid-column:span 1}
+html body .flow .card.wide.fit1 .plate{aspect-ratio:1}
+
+/* sky map hover/pick thumbnails: fade in once loaded, never show a broken-image box */
+.tip img,.pick img{opacity:0;transition:opacity .2s;background:#05070f}
+.tip img.ld,.pick img.ld{opacity:1}
+
+/* viewer: photo uses the whole screen; details float on top as a panel that can be folded to a small bar; prev/next centred at the bottom */
+html body .lb{display:block}
+html body .lb .stage{position:absolute;inset:0;padding:max(16px,env(safe-area-inset-top,0px)) 16px 84px 16px}
+html body .lb aside{position:absolute;z-index:3;top:max(64px,calc(env(safe-area-inset-top,0px) + 56px));right:max(16px,env(safe-area-inset-right,0px));bottom:auto;left:auto;width:340px;max-height:calc(100% - 64px - 96px);
+  border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel) 88%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  box-shadow:0 12px 40px rgba(0,0,0,.45);padding:18px 18px 18px;overflow:auto}
+html body .lb aside .lbmin{position:absolute;top:10px;right:10px;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--chip);color:var(--ink);cursor:pointer}
+html body .lb aside .lbmin svg{transition:transform .25s}
+html body .lb aside.min{max-height:none;overflow:hidden;cursor:pointer;padding:12px 52px 12px 16px}
+html body .lb aside.min .lbmin svg{transform:rotate(180deg)}
+html body .lb aside.min > :not(h3):not(.lbctl):not(.grip){display:none!important}
+html body .lb aside.min h3{font-size:18px}
+html body .lb aside h3{padding-right:34px}
+html body .lb .lbnav{position:absolute;z-index:2;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:10px}
+html body .lb .lbnav .nav{position:static;transform:none;width:52px;height:44px;border-radius:22px;background:rgba(255,255,255,.12);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:24px;line-height:1}
+html body .lb .lbnav .nav:hover{background:rgba(255,255,255,.22)}
+html body .lb .x{z-index:4}
+@media (max-width:760px){
+  html body .lb .stage{padding:max(12px,env(safe-area-inset-top,0px)) 8px 76px}
+  html body .lb aside{top:auto;left:8px;right:8px;width:auto;bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 56px);max-height:46vh;border-radius:14px}
+  html body .lb aside.min{max-height:none}
+}
+
+html body .lb{background:#000}
+
+/* close button lives in the panel, next to the fold button; the photo fills the space the panel leaves free */
+html body .lb aside .x{position:absolute;top:10px;right:10px;width:30px;height:30px;font-size:18px;border:0;background:var(--chip);display:grid;place-items:center;padding:0}
+html body .lb aside .lbmin{right:46px}
+html body .lb aside h3{padding-right:70px}
+html body .lb aside.min{padding-right:88px}
+html body .lb aside.min > .x{display:grid!important}
+html body .lb aside{top:max(16px,env(safe-area-inset-top,0px));max-height:calc(100% - 32px - 70px)}
+html body .lb .stage{right:var(--lbR,0px);bottom:var(--lbB,0px);transition:right .3s ease,bottom .3s ease}
+html body .lb .lbnav{left:50%}   /* the arrows sit inside the photo area, so they stay centred under the photo */
+@media (max-width:760px){
+  html body .lb aside{top:auto;max-height:46vh}
+  html body .lb .stage{bottom:0;padding-bottom:calc(var(--lbP,0px) + 76px);transition:padding-bottom .3s ease}
+}
+
+/* draggable details panel */
+@media (min-width:761px){
+  html body .lb aside.min{cursor:grab;touch-action:none}
+  html body .lb aside :is(button,select,a,details,dl,.row,canvas,.exs){cursor:auto}
+  html body .lb aside :is(button,select,a,summary){cursor:pointer}
+  html body .lb aside.dragging{cursor:grabbing;user-select:none;transition:none}
+  html body .lb aside.dragging *{user-select:none}
+}
+html body .lb .stage{left:var(--lbL,0px);transition:right .3s ease,left .3s ease,bottom .3s ease}
+
+/* panel header controls: previous · next · fold · close (also on the folded bar) */
+html body .lb aside .lbctl{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:2}
+html body .lb aside .lbctl button{position:static;transform:none;width:30px;height:30px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:var(--chip);color:var(--ink);font-size:18px;line-height:1;cursor:pointer}
+html body .lb aside .lbctl button:hover{background:var(--chip-on);color:var(--chip-on-fg)}
+html body .lb aside .lbctl .nav{margin-right:0}
+html body .lb aside .lbctl .lbmin{margin-left:6px}
+html body .lb aside h3{padding-right:0;margin-top:26px}
+html body .lb aside.min{padding:12px 16px 12px 16px;padding-right:170px}
+html body .lb aside.min h3{margin-top:0}
+html body .lb aside.min > .lbctl{display:flex!important;top:50%;transform:translateY(-50%)}
+html body .lb aside.min > .kindtag{display:none!important}
+html body .lb .stage{padding-bottom:16px}
+html body .lb aside{max-height:calc(100% - 32px)}
+@media (max-width:760px){
+  html body .lb aside{bottom:max(8px,env(safe-area-inset-bottom,0px))}
+  html body .lb .stage{padding-bottom:calc(var(--lbP,0px) + 76px)}
+}
+
+/* drag handle in front of the folded bar's title (desktop only, where the bar can be dragged) */
+html body .lb aside .grip{display:none}
+@media (min-width:761px){
+  html body .lb aside.min > .grip{display:grid!important;place-items:center;position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:28px;color:var(--muted);opacity:.8}
+  html body .lb aside.min:hover > .grip{opacity:1;color:var(--ink)}
+  html body .lb aside.min{padding-left:36px;width:340px;max-width:calc(100vw - 32px)}   /* same width open and folded: folding only changes the height */
+}
+/* folded bar: one-line name, cut with an ellipsis when too long (all screen sizes) */
+html body .lb aside.min h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%}
+
+/* month labels: smaller, month name in the Astro accent colour */
+html body .mlab{font-size:11px;letter-spacing:.08em;gap:6px;padding:8px 12px 16px}
+html body .mlab b{color:var(--accent);font-weight:700}
+html body .mlab em{font-size:10.5px}
+@media (max-width:600px){html body .mlab{font-size:10.5px;padding:7px 10px 14px}}
+</style></head><body>
 <title>AlachAstro</title>
 <link rel="icon" type="image/png" sizes="64x64" href="data:image/png;base64,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">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
@@ -334,6 +461,52 @@ html,*{scrollbar-width:thin;scrollbar-color:rgba(147,160,168,.28) transparent}
 ::-webkit-scrollbar-thumb{background:rgba(147,160,168,.22);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
 ::-webkit-scrollbar-thumb:hover{background-color:rgba(147,160,168,.45)}
 ::-webkit-scrollbar-corner{background:transparent}
+
+/* phones: details sheet never takes more than ~40% of the screen, the photo keeps the rest */
+@media (max-width:760px){
+  html body .lb aside:not(.min){max-height:40vh!important;max-height:40dvh!important}
+  html body .lb aside{top:auto!important}
+}
+
+/* year bar: smaller year */
+html body .flow .mhead h2{font-size:12.5px!important;letter-spacing:.04em!important}
+html body .flow .mhead .mstat{font-size:11.5px}
+
+/* viewer: Show on sky map spans the panel, same height and style as the Photo / Labels buttons */
+html body .lb #lbSky{display:block;width:100%;text-align:center}
+/* folded bar: drag handle level with the title */
+html body #lbAside.min > .grip{top:27px!important}
+/* magnifier: show the photo at its original size */
+html body .lb .zbtn{position:absolute;z-index:4;width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:.85;transition:opacity .15s,background .15s;padding:0}
+html body .lb .zbtn:hover{opacity:1;background:rgba(0,0,0,.75)}
+html body .lb .zbtn[hidden]{display:none}
+html body .lb .zhint{display:none!important}
+html body .lb .zpill{position:absolute;z-index:4;transform:translate(-50%,-100%);padding:7px 14px;border-radius:999px;background:rgba(0,0,0,.62);color:#fff;font:500 12.5px var(--f-body);white-space:nowrap;pointer-events:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;transition:opacity .35s ease}
+html body .lb .zpill.on{opacity:1}
+@media (prefers-reduced-motion: reduce){html body .lb .zpill{transition:none}}
+html body .lb .zbtn{display:none!important}   /* no corner button: click the photo to zoom */
+html body .lb .zbtn::after{content:attr(aria-label);position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);white-space:nowrap;font:500 12px var(--f-body);background:rgba(0,0,0,.75);color:#fff;padding:4px 8px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .15s}
+html body .lb .zbtn:hover::after{opacity:1}
+html body .lb .stage.zoomed{overflow:auto;display:block;padding:0!important;cursor:grab;transition:none;scrollbar-width:thin}
+html body .lb .stage.zoomed.panning{cursor:grabbing}
+html body .lb .stage.zoomed .pair{width:max-content;height:max-content;min-width:100%;min-height:100%}
+html body .lb .stage.zoomed .pair figure{max-height:none}
+html body .lb .stage.zoomed .pair figure img{max-width:none!important;max-height:none!important;width:auto!important;height:auto!important}
+html body .lb .stage.zoomed figcaption{display:none}
+html body .lb .pair figure img.zin{cursor:zoom-in}
+html body .lb .stage.zoomed,html body .lb .stage.zoomed img{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+html body .lb .stage.zoomed.panning,html body .lb .stage.zoomed.panning img{cursor:grabbing}
+/* folded panel keeps "Show on sky map" under the title */
+html body #lbAside.min > .skyrow{display:block!important;margin-top:10px;margin-right:-154px}html body #lbAside.min > .skyrow:has(#lbSky[hidden]){display:none!important}
+html body .lb aside.min:has(> .skyrow:not([hidden])) > .lbctl{top:12px;transform:none}
+html body .lb aside.min:has(> .skyrow) h3{line-height:30px}
+/* year dropdown + smaller header totals */
+html body #yearSel{width:auto;min-width:130px;height:32px;font-size:13px}
+@media (max-width:760px){html body #yearSel{width:100%;height:40px;font-size:15px}html body .fgyear{display:block}html body .fgyear .flabel{display:block;margin-bottom:6px}}
+html body .stat b{font-size:19px!important}html body .stat span{font-size:11px}html body .stats{gap:16px}
+html body .lb aside :is(button:not(:disabled),a[href],select,summary){cursor:pointer!important}
+html body .lb #lbSky{background:var(--accent);color:#fff;font-weight:600}html body .lb #lbSky:hover{filter:brightness(1.08)}
+:root[data-theme="dark"] .lb #lbSky{color:#121518!important}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lb #lbSky{color:#121518!important}}
 </style>
 <div class="wrap">
 <header class="mast">
@@ -357,9 +530,9 @@ html,*{scrollbar-width:thin;scrollbar-color:rgba(147,160,168,.28) transparent}
       <label class="flabel" for="targetSel">Target</label>
       <select class="sel" id="targetSel" aria-label="Target"></select>
       <div class="filters" id="filters">
-        <div class="fgrp fgview"><span class="flabel">Group by</span><span id="viewChips" class="filters"><button class="chip" data-group="month" aria-pressed="true">By month</button><button class="chip" data-group="target" aria-pressed="false">By target</button></span></div>
+        <div class="fgrp fgview"><span class="flabel">Group by</span><span id="viewChips" class="filters"><button class="chip" data-group="month" aria-pressed="true">By date</button><button class="chip" data-group="target" aria-pressed="false">By target</button></span></div>
         <span class="sep gsep" aria-hidden="true"></span>
-        <div class="fgrp"><span class="flabel">Year</span><button class="chip" data-year="all" aria-pressed="true">All years</button><span id="yearChips" class="filters"></span></div>
+        <div class="fgrp fgyear"><label class="flabel" for="yearSel">Year</label><select class="sel" id="yearSel" aria-label="Year"></select></div>
         <span class="sep" aria-hidden="true"></span>
         <div class="fgrp"><span class="flabel">Type</span><span id="catChips" class="filters"></span></div>
       </div>
@@ -405,20 +578,21 @@ html,*{scrollbar-width:thin;scrollbar-color:rgba(147,160,168,.28) transparent}
   <div class="stage">
     <div class="pair" id="lbPair"><figure><img id="lbImg" alt=""><figcaption id="lbCap1"></figcaption></figure><figure id="lbFig2" hidden><img id="lbImg2" alt=""><figcaption id="lbCap2"></figcaption></figure></div>
     <div class="spin" id="lbSpin" role="status" aria-label="Loading photo" hidden></div>
-    <button class="nav prev" id="lbPrev" aria-label="Previous photo">‹</button>
-    <button class="nav next" id="lbNext" aria-label="Next photo">›</button>
   </div>
-  <aside>
+  <aside id="lbAside">
+    <div class="lbctl"><button class="nav prev" id="lbPrev" aria-label="Previous photo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><button class="nav next" id="lbNext" aria-label="Next photo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button><button type="button" class="lbmin" id="lbMin" aria-label="Hide details" aria-expanded="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><button class="x" id="lbClose" aria-label="Close">×</button></div>
+    <span class="grip" aria-hidden="true" title="Drag to move"><svg viewBox="0 0 10 16" width="10" height="16"><g fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></g></svg></span>
     <span class="kindtag" id="lbKind"></span>
     <h3 id="lbTitle"></h3>
     <div class="row" id="lbModes"></div>
     <div class="row" id="lbTools"></div>
     <p class="exlab" id="lbExLab" hidden></p><div class="exs" id="lbEx" hidden></div>
     <dl id="lbMeta"></dl>
+      <details class="tech" id="lbTech"><summary>Technical details</summary><dl id="lbTechDl"></dl></details>
     <div class="mini"><canvas id="lbMini" width="260" height="260" aria-label="Where the object stood in the sky"></canvas><p id="lbMiniCap"></p></div>
-    <div class="row"><button class="btn" id="lbSky">Show on sky map</button></div>
+    <div class="row skyrow"><button class="btn" id="lbSky">Show on sky map</button></div>
+    <p class="zhint" id="lbZHint" hidden>Click to enlarge · double-click to reset</p>
   </aside>
-  <button class="x" id="lbClose" aria-label="Close">×</button>
 </div>
 <script>
 const ITEMS = [
@@ -540,7 +714,7 @@ const ITEMS = [
   "thh": 576,
   "w": 960,
   "h": 864,
-  "anim": "img/ap-2022-10-20-jupiter_anim.gif",
+  "anim": "img/ap-2022-10-20-jupiter_anim.webp",
   "file": "2022-10-20-Jupiter-4100.png",
   "ts": "2022-10-20T20:50",
   "src": "Astropolis",
@@ -629,36 +803,6 @@ const ITEMS = [
   "ang": 48.57
  },
  {
-  "id": "ap-2022-10-22-moon",
-  "date": "2022-10-22",
-  "t": "Moon",
-  "target": "Moon",
-  "kind": "Moon",
-  "cat": "moon",
-  "con": "Virgo",
-  "ra": 183.297,
-  "dec": 1.832,
-  "img": "img/ap-2022-10-22-moon.jpg",
-  "th": "img/ap-2022-10-22-moon_th.jpg",
-  "tw": 640,
-  "thh": 458,
-  "w": 2076,
-  "h": 1487,
-  "anim": "img/ap-2022-10-22-moon_anim.gif",
-  "file": "image.gif",
-  "ts": "2022-10-23T04:50",
-  "src": "Astropolis",
-  "site": [
-   54.5614,
-   18.5448,
-   "Gdynia"
-  ],
-  "det": {},
-  "fav": false,
-  "moonIllum": null,
-  "tsApprox": true
- },
- {
   "id": "ap-2022-10-23-jupiter",
   "date": "2022-10-23",
   "t": "Jupiter",
@@ -674,7 +818,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2022-10-23-jupiter_anim.gif",
+  "anim": "img/ap-2022-10-23-jupiter_anim.webp",
   "file": "2022-10-23-Jupiter.png",
   "ts": "2022-10-23T20:40",
   "src": "Astropolis",
@@ -743,15 +887,6 @@ const ITEMS = [
     "file": "2022-10-26-Jupiter-90.png"
    },
    {
-    "img": "img/ap-2022-10-26-jupiter-x3.jpg",
-    "th": "img/ap-2022-10-26-jupiter-x3_th.jpg",
-    "w": 448,
-    "h": 448,
-    "tw": 320,
-    "thh": 320,
-    "file": "1300433078_2022-10-26-2050_6-U-RGB-Jup_pipp_lapl5_ap746_shapenedRegistax.jpg-2.c074ed0f9fb25bc0662726d21a112c97.jpg"
-   },
-   {
     "img": "img/ap-2022-10-26-jupiter-x4.jpg",
     "th": "img/ap-2022-10-26-jupiter-x4_th.jpg",
     "w": 600,
@@ -778,7 +913,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "2022-10-26-2024_8-Jupiter.gif",
-    "anim": "img/ap-2022-10-26-jupiter-x6_anim.gif"
+    "anim": "img/ap-2022-10-26-jupiter-x6_anim.webp"
    },
    {
     "img": "img/ap-2022-10-26-jupiter-x7.jpg",
@@ -840,7 +975,7 @@ const ITEMS = [
   "thh": 373,
   "w": 1804,
   "h": 1052,
-  "anim": "img/ap-2022-10-30-jupiter_anim.gif",
+  "anim": "img/ap-2022-10-30-jupiter_anim.webp",
   "file": "2022-10-30-1953_5-Jupiter_3100.png",
   "ts": "2022-10-30T19:47",
   "src": "Astropolis",
@@ -896,7 +1031,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2022-11-03-jupiter_anim.gif",
+  "anim": "img/ap-2022-11-03-jupiter_anim.webp",
   "file": "2022-11-03-Jupiter_transit-2.png",
   "ts": "2022-11-03T19:50",
   "src": "Astropolis",
@@ -927,7 +1062,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "2022-11-03-Jupiter_transit-1.gif",
-    "anim": "img/ap-2022-11-03-jupiter-x2_anim.gif"
+    "anim": "img/ap-2022-11-03-jupiter-x2_anim.webp"
    },
    {
     "img": "img/ap-2022-11-03-jupiter-x3.jpg",
@@ -952,7 +1087,8 @@ const ITEMS = [
   "con": "Aquarius",
   "ra": 346.803,
   "dec": -11.459,
-  "img": "img/ap-2022-11-03-moon.jpg",
+  "lab": "img/ap-2022-11-03-moon_labels.jpg",
+    "img": "img/ap-2022-11-03-moon.jpg",
   "th": "img/ap-2022-11-03-moon_th.jpg",
   "tw": 640,
   "thh": 345,
@@ -1039,7 +1175,7 @@ const ITEMS = [
   "thh": 388,
   "w": 1336,
   "h": 809,
-  "anim": "img/ap-2022-11-05-jupiter_anim.gif",
+  "anim": "img/ap-2022-11-05-jupiter_anim.webp",
   "file": "2022-11-05-Jupiter.png",
   "ts": "2022-11-05T19:50",
   "src": "Astropolis",
@@ -1070,7 +1206,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2022-11-05-mars_anim.gif",
+  "anim": "img/ap-2022-11-05-mars_anim.webp",
   "file": "2022-11-05-Mars.png",
   "ts": "2022-11-06T01:20",
   "src": "Astropolis",
@@ -1095,7 +1231,8 @@ const ITEMS = [
   "con": "Cetus",
   "ra": 11.874,
   "dec": 1.353,
-  "img": "img/ap-2022-11-05-moon.jpg",
+  "lab": "img/ap-2022-11-05-moon_labels.jpg",
+    "img": "img/ap-2022-11-05-moon.jpg",
   "th": "img/ap-2022-11-05-moon_th.jpg",
   "tw": 640,
   "thh": 299,
@@ -1131,7 +1268,7 @@ const ITEMS = [
   "thh": 374,
   "w": 1504,
   "h": 880,
-  "anim": "img/ap-2022-11-06-jupiter_anim.gif",
+  "anim": "img/ap-2022-11-06-jupiter_anim.webp",
   "file": "2022-11-06-1854_6-Jupiter.gif",
   "ts": "2022-11-06T18:54",
   "src": "Astropolis",
@@ -1152,7 +1289,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "2022-11-06-1903_4-Jupiter.gif",
-    "anim": "img/ap-2022-11-06-jupiter-x1_anim.gif"
+    "anim": "img/ap-2022-11-06-jupiter-x1_anim.webp"
    }
   ],
   "tsApprox": false,
@@ -1168,7 +1305,8 @@ const ITEMS = [
   "con": "Pisces",
   "ra": 24.101,
   "dec": 7.621,
-  "img": "img/ap-2022-11-06-moon.jpg",
+  "lab": "img/ap-2022-11-06-moon_labels.jpg",
+    "img": "img/ap-2022-11-06-moon.jpg",
   "th": "img/ap-2022-11-06-moon_th.jpg",
   "tw": 640,
   "thh": 373,
@@ -1204,7 +1342,7 @@ const ITEMS = [
   "thh": 640,
   "w": 672,
   "h": 672,
-  "anim": "img/ap-2022-11-08-mars_anim.gif",
+  "anim": "img/ap-2022-11-08-mars_anim.webp",
   "file": "2022-11-08-2041_8-Mars.png",
   "ts": "2022-11-08T20:41",
   "src": "Astropolis",
@@ -1250,72 +1388,6 @@ const ITEMS = [
   "tsApprox": true
  },
  {
-  "id": "ap-2022-11-15-mars",
-  "date": "2022-11-15",
-  "t": "Mars",
-  "target": "Mars",
-  "kind": "Planet",
-  "cat": "planets",
-  "con": "Taurus",
-  "ra": 82.662,
-  "dec": 24.517,
-  "img": "img/ap-2022-11-15-mars.jpg",
-  "th": "img/ap-2022-11-15-mars_th.jpg",
-  "tw": 320,
-  "thh": 320,
-  "w": 448,
-  "h": 448,
-  "anim": "img/ap-2022-11-15-mars_anim.gif",
-  "file": "Warstwa 01_pipp.gif",
-  "ts": "2022-11-16T00:40",
-  "src": "Astropolis",
-  "site": [
-   54.5614,
-   18.5448,
-   "Gdynia"
-  ],
-  "det": {
-   "proc": [
-    "PIPP"
-   ]
-  },
-  "fav": false,
-  "moonIllum": 55,
-  "tsApprox": true,
-  "ang": 16.56
- },
- {
-  "id": "ap-2022-11-28-jupiter",
-  "date": "2022-11-28",
-  "t": "Jupiter",
-  "target": "Jupiter",
-  "kind": "Planet",
-  "cat": "planets",
-  "con": "Pisces",
-  "ra": 359.213,
-  "dec": -1.907,
-  "img": "img/ap-2022-11-28-jupiter.jpg",
-  "th": "img/ap-2022-11-28-jupiter_th.jpg",
-  "tw": 640,
-  "thh": 481,
-  "w": 997,
-  "h": 749,
-  "anim": null,
-  "file": "jupiter-color.png",
-  "ts": "2022-11-28T18:10",
-  "src": "Astropolis",
-  "site": [
-   54.5614,
-   18.5448,
-   "Gdynia"
-  ],
-  "det": {},
-  "fav": false,
-  "moonIllum": 29,
-  "tsApprox": true,
-  "ang": 43.89
- },
- {
   "id": "ap-2022-12-10-jupiter",
   "date": "2022-12-10",
   "t": "Jupiter",
@@ -1331,7 +1403,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2022-12-10-jupiter_anim.gif",
+  "anim": "img/ap-2022-12-10-jupiter_anim.webp",
   "file": "2022-12-10-Jupiter_short-2.gif",
   "ts": "2022-12-10T17:30",
   "src": "Astropolis",
@@ -1362,7 +1434,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2022-12-10-mars_anim.gif",
+  "anim": "img/ap-2022-12-10-mars_anim.webp",
   "file": "2022-12-10-Mars-Drizzle15-ps.png",
   "ts": "2022-12-10T22:20",
   "src": "Astropolis",
@@ -1492,7 +1564,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2022-12-17-mars_anim.gif",
+  "anim": "img/ap-2022-12-17-mars_anim.webp",
   "file": "2022-12-17-2223_5-Mars.png",
   "ts": "2022-12-17T22:23",
   "src": "Astropolis",
@@ -1523,7 +1595,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2022-12-29-mars_anim.gif",
+  "anim": "img/ap-2022-12-29-mars_anim.webp",
   "file": "2022-12-29-1909_6-Mars_WS.png",
   "ts": "2022-12-29T19:09",
   "src": "Astropolis",
@@ -1658,7 +1730,8 @@ const ITEMS = [
   "con": "Draco",
   "ra": 267.086,
   "dec": 57.238,
-  "img": "img/ap-2023-01-18-c-2022-a2-panstarrs.jpg",
+  "lab": "img/ap-2023-01-18-c-2022-a2-panstarrs_labels.jpg",
+    "img": "img/ap-2023-01-18-c-2022-a2-panstarrs.jpg",
   "th": "img/ap-2023-01-18-c-2022-a2-panstarrs_th.jpg",
   "tw": 320,
   "thh": 320,
@@ -1676,7 +1749,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 10,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 261.84806,
+   "dec": 56.38667,
+   "s": 0.000576,
+   "rot": 267.37,
+   "mir": 0,
+   "w": 500
+  }
  },
  {
   "id": "ap-2023-01-21-c-2022-a2-panstarrs",
@@ -1688,7 +1769,8 @@ const ITEMS = [
   "con": "Draco",
   "ra": 273.667,
   "dec": 58.011,
-  "img": "img/ap-2023-01-21-c-2022-a2-panstarrs.jpg",
+  "lab": "img/ap-2023-01-21-c-2022-a2-panstarrs_labels.jpg",
+    "img": "img/ap-2023-01-21-c-2022-a2-panstarrs.jpg",
   "th": "img/ap-2023-01-21-c-2022-a2-panstarrs_th.jpg",
   "tw": 640,
   "thh": 427,
@@ -1706,7 +1788,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 1,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 261.83478,
+   "dec": 56.30352,
+   "s": 0.000476667,
+   "rot": 267.35,
+   "mir": 0,
+   "w": 1500
+  }
  },
  {
   "id": "ap-2023-01-25-c-2022-e3-ztf",
@@ -1718,7 +1808,8 @@ const ITEMS = [
   "con": "Ursa Minor",
   "ra": 222.436,
   "dec": 66.728,
-  "img": "img/ap-2023-01-25-c-2022-e3-ztf.jpg",
+  "lab": "img/ap-2023-01-25-c-2022-e3-ztf_labels.jpg",
+    "img": "img/ap-2023-01-25-c-2022-e3-ztf.jpg",
   "th": "img/ap-2023-01-25-c-2022-e3-ztf_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -1736,7 +1827,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 25,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 221.19198,
+   "dec": 67.73866,
+   "s": 0.000446667,
+   "rot": 271.48,
+   "mir": 1,
+   "w": 1200
+  }
  },
  {
   "id": "ap-2023-01-27-c-2022-a2-panstarrs",
@@ -1748,7 +1847,8 @@ const ITEMS = [
   "con": "Draco",
   "ra": 286.948,
   "dec": 58.715,
-  "img": "img/ap-2023-01-27-c-2022-a2-panstarrs.jpg",
+  "lab": "img/ap-2023-01-27-c-2022-a2-panstarrs_labels.jpg",
+    "img": "img/ap-2023-01-27-c-2022-a2-panstarrs.jpg",
   "th": "img/ap-2023-01-27-c-2022-a2-panstarrs_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -1766,7 +1866,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 46,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 285.17876,
+   "dec": 58.68413,
+   "s": 0.000599167,
+   "rot": 270.58,
+   "mir": 0,
+   "w": 1200
+  }
  },
  {
   "id": "ap-2023-02-19-c-2022-e3-ztf",
@@ -1778,7 +1886,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 69.761,
   "dec": 9.195,
-  "img": "img/ap-2023-02-19-c-2022-e3-ztf.jpg",
+  "lab": "img/ap-2023-02-19-c-2022-e3-ztf_labels.jpg",
+    "img": "img/ap-2023-02-19-c-2022-e3-ztf.jpg",
   "th": "img/ap-2023-02-19-c-2022-e3-ztf_th.jpg",
   "tw": 640,
   "thh": 426,
@@ -1796,7 +1905,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 1,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 69.76939,
+   "dec": 9.31815,
+   "s": 0.0005025,
+   "rot": 95.39,
+   "mir": 0,
+   "w": 1600
+  }
  },
  {
   "id": "ap-2023-02-19-jupiter",
@@ -1920,7 +2037,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 84.684,
   "dec": 26.822,
-  "img": "img/ap-2023-02-28-moon.jpg",
+  "lab": "img/ap-2023-02-28-moon_labels.jpg",
+    "img": "img/ap-2023-02-28-moon.jpg",
   "th": "img/ap-2023-02-28-moon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -1979,7 +2097,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 125.711,
   "dec": 24.166,
-  "img": "img/ap-2023-03-03-moon.jpg",
+  "lab": "img/ap-2023-03-03-moon_labels.jpg",
+    "img": "img/ap-2023-03-03-moon.jpg",
   "th": "img/ap-2023-03-03-moon_th.jpg",
   "tw": 640,
   "thh": 370,
@@ -2024,7 +2143,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 138.509,
   "dec": 20.787,
-  "img": "img/ap-2023-03-04-moon.jpg",
+  "lab": "img/ap-2023-03-04-moon_labels.jpg",
+    "img": "img/ap-2023-03-04-moon.jpg",
   "th": "img/ap-2023-03-04-moon_th.jpg",
   "tw": 361,
   "thh": 640,
@@ -2065,7 +2185,8 @@ const ITEMS = [
   "con": "Serpens",
   "ra": 230.129,
   "dec": -0.853,
-  "img": "img/ap-2023-03-05-c-2023-a3-tsuchinshan-atlas.jpg",
+  "lab": "img/ap-2023-03-05-c-2023-a3-tsuchinshan-atlas_labels.jpg",
+    "img": "img/ap-2023-03-05-c-2023-a3-tsuchinshan-atlas.jpg",
   "th": "img/ap-2023-03-05-c-2023-a3-tsuchinshan-atlas_th.jpg",
   "tw": 640,
   "thh": 533,
@@ -2083,7 +2204,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 98,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 230.19002,
+   "dec": -0.90227,
+   "s": 0.000396111,
+   "rot": 29.75,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-03-05-moon",
@@ -2095,7 +2224,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 150.685,
   "dec": 16.475,
-  "img": "img/ap-2023-03-05-moon.jpg",
+  "lab": "img/ap-2023-03-05-moon_labels.jpg",
+    "img": "img/ap-2023-03-05-moon.jpg",
   "th": "img/ap-2023-03-05-moon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -2163,7 +2293,8 @@ const ITEMS = [
   "con": "Serpens",
   "ra": 229.721,
   "dec": -0.561,
-  "img": "img/ap-2023-03-11-c-2023-a3-tsuchinshan-atlas.jpg",
+  "lab": "img/ap-2023-03-11-c-2023-a3-tsuchinshan-atlas_labels.jpg",
+    "img": "img/ap-2023-03-11-c-2023-a3-tsuchinshan-atlas.jpg",
   "th": "img/ap-2023-03-11-c-2023-a3-tsuchinshan-atlas_th.jpg",
   "tw": 640,
   "thh": 427,
@@ -2181,7 +2312,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 80,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 229.96429,
+   "dec": -0.72852,
+   "s": 0.000326667,
+   "rot": 90.56,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-03-11-venus",
@@ -2382,7 +2521,7 @@ const ITEMS = [
     "tw": 640,
     "thh": 429,
     "file": "m100ceres_anim_short.gif",
-    "anim": "img/ap-2023-03-26-ceres-x1_anim.gif"
+    "anim": "img/ap-2023-03-26-ceres-x1_anim.webp"
    }
   ]
  },
@@ -2396,7 +2535,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 80.24,
   "dec": 26.542,
-  "img": "img/ap-2023-03-27-moon.jpg",
+  "lab": "img/ap-2023-03-27-moon_labels.jpg",
+    "img": "img/ap-2023-03-27-moon.jpg",
   "th": "img/ap-2023-03-27-moon_th.jpg",
   "tw": 640,
   "thh": 374,
@@ -2579,7 +2719,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 55.401,
   "dec": 21.118,
-  "img": "img/ap-2023-04-09-venus-pleiades.jpg",
+  "lab": "img/ap-2023-04-09-venus-pleiades_labels.jpg",
+    "img": "img/ap-2023-04-09-venus-pleiades.jpg",
   "th": "img/ap-2023-04-09-venus-pleiades_th.jpg",
   "tw": 640,
   "thh": 360,
@@ -2597,7 +2738,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 86,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 56.32475,
+   "dec": 22.93988,
+   "s": 0.00353688,
+   "rot": 89.66,
+   "mir": 0,
+   "w": 1600
+  }
  },
  {
   "id": "ap-2023-04-12-mercury",
@@ -2615,7 +2764,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2023-04-12-mercury_anim.gif",
+  "anim": "img/ap-2023-04-12-mercury_anim.webp",
   "file": "Mercury_2023-03-12-color.png",
   "ts": "2023-04-12T17:40",
   "src": "Astropolis",
@@ -2640,7 +2789,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 60.264,
   "dec": 22.313,
-  "img": "img/ap-2023-04-13-venus-pleiades.jpg",
+  "lab": "img/ap-2023-04-13-venus-pleiades_labels.jpg",
+    "img": "img/ap-2023-04-13-venus-pleiades.jpg",
   "th": "img/ap-2023-04-13-venus-pleiades_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -2658,7 +2808,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 46,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 57.53844,
+   "dec": 23.52929,
+   "s": 0.00254111,
+   "rot": 359.7,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-04-14-m1",
@@ -2670,7 +2828,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 83.633,
   "dec": 22.0145,
-  "img": "img/ap-2023-04-14-m1.jpg",
+  "lab": "img/ap-2023-04-14-m1_labels.jpg",
+    "img": "img/ap-2023-04-14-m1.jpg",
   "th": "img/ap-2023-04-14-m1_th.jpg",
   "tw": 640,
   "thh": 427,
@@ -2688,7 +2847,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 34,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 83.63441,
+   "dec": 22.02019,
+   "s": 0.000400556,
+   "rot": 89.9,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-04-14-m3",
@@ -2700,7 +2867,8 @@ const ITEMS = [
   "con": "Canes Venatici",
   "ra": 205.5484,
   "dec": 28.3773,
-  "img": "img/ap-2023-04-14-m3.jpg",
+  "lab": "img/ap-2023-04-14-m3_labels.jpg",
+    "img": "img/ap-2023-04-14-m3.jpg",
   "th": "img/ap-2023-04-14-m3_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -2718,7 +2886,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 31,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 205.54578,
+   "dec": 28.37618,
+   "s": 0.000318333,
+   "rot": 268.52,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-04-14-m65-m66",
@@ -2730,7 +2906,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 169.9,
   "dec": 13.05,
-  "img": "img/ap-2023-04-14-m65-m66.jpg",
+  "lab": "img/ap-2023-04-14-m65-m66_labels.jpg",
+    "img": "img/ap-2023-04-14-m65-m66.jpg",
   "th": "img/ap-2023-04-14-m65-m66_th.jpg",
   "tw": 640,
   "thh": 530,
@@ -2748,7 +2925,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 32,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 169.80438,
+   "dec": 13.15232,
+   "s": 0.000401111,
+   "rot": 87.88,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-04-19-venus",
@@ -2852,7 +3037,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 75.043,
   "dec": 25.805,
-  "img": "img/ap-2023-04-23-moon-venus-pleiades.jpg",
+  "lab": "img/ap-2023-04-23-moon-venus-pleiades_labels.jpg",
+    "img": "img/ap-2023-04-23-moon-venus-pleiades.jpg",
   "th": "img/ap-2023-04-23-moon-venus-pleiades_th.jpg",
   "tw": 640,
   "thh": 427,
@@ -2870,7 +3056,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 14,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 61.64687,
+   "dec": 23.01737,
+   "s": 0.0153994,
+   "rot": 33.85,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-04-23-venus",
@@ -2888,7 +3082,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2023-04-23-venus_anim.gif",
+  "anim": "img/ap-2023-04-23-venus_anim.webp",
   "file": "Venus_pipp_lapl4_ap14_conv.png",
   "ts": "2023-04-23T18:50",
   "src": "Astropolis",
@@ -2914,7 +3108,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "venus_anim.gif",
-    "anim": "img/ap-2023-04-23-venus-x1_anim.gif"
+    "anim": "img/ap-2023-04-23-venus-x1_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -2960,7 +3154,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 153.446,
   "dec": 15.452,
-  "img": "img/ap-2023-04-29-moon.jpg",
+  "lab": "img/ap-2023-04-29-moon_labels.jpg",
+    "img": "img/ap-2023-04-29-moon.jpg",
   "th": "img/ap-2023-04-29-moon_th.jpg",
   "tw": 594,
   "thh": 640,
@@ -3059,7 +3254,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 164.829,
   "dec": 10.345,
-  "img": "img/ap-2023-04-30-moon.jpg",
+  "lab": "img/ap-2023-04-30-moon_labels.jpg",
+    "img": "img/ap-2023-04-30-moon.jpg",
   "th": "img/ap-2023-04-30-moon_th.jpg",
   "tw": 587,
   "thh": 640,
@@ -3135,7 +3331,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 176.157,
   "dec": 4.619,
-  "img": "img/ap-2023-05-01-moon.jpg",
+  "lab": "img/ap-2023-05-01-moon_labels.jpg",
+    "img": "img/ap-2023-05-01-moon.jpg",
   "th": "img/ap-2023-05-01-moon_th.jpg",
   "tw": 640,
   "thh": 597,
@@ -3230,7 +3427,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 187.517,
   "dec": -1.436,
-  "img": "img/ap-2023-05-02-moon.jpg",
+  "lab": "img/ap-2023-05-02-moon_labels.jpg",
+    "img": "img/ap-2023-05-02-moon.jpg",
   "th": "img/ap-2023-05-02-moon_th.jpg",
   "tw": 640,
   "thh": 515,
@@ -3260,7 +3458,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 211.531,
   "dec": -13.656,
-  "img": "img/ap-2023-05-04-moon.jpg",
+  "lab": "img/ap-2023-05-04-moon_labels.jpg",
+    "img": "img/ap-2023-05-04-moon.jpg",
   "th": "img/ap-2023-05-04-moon_th.jpg",
   "tw": 640,
   "thh": 504,
@@ -3570,7 +3769,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 171.904,
   "dec": 6.598,
-  "img": "img/ap-2023-05-28-moon.jpg",
+  "lab": "img/ap-2023-05-28-moon_labels.jpg",
+    "img": "img/ap-2023-05-28-moon.jpg",
   "th": "img/ap-2023-05-28-moon_th.jpg",
   "tw": 640,
   "thh": 420,
@@ -3737,7 +3937,8 @@ const ITEMS = [
   "con": "Canes Venatici",
   "ra": 202.4696,
   "dec": 47.1952,
-  "img": "img/ap-2023-06-03-m51.jpg",
+  "lab": "img/ap-2023-06-03-m51_labels.jpg",
+    "img": "img/ap-2023-06-03-m51.jpg",
   "th": "img/ap-2023-06-03-m51_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -3755,7 +3956,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 100,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 202.46936,
+   "dec": 47.19431,
+   "s": 0.000323014,
+   "rot": 346.51,
+   "mir": 0,
+   "w": 1712
+  }
  },
  {
   "id": "ap-2023-06-03-venus",
@@ -3773,7 +3982,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2023-06-03-venus_anim.gif",
+  "anim": "img/ap-2023-06-03-venus_anim.webp",
   "file": "Venus_irpass-bg39.gif",
   "ts": "2023-06-03T20:10",
   "src": "Astropolis",
@@ -3794,7 +4003,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "Venus_irpass-ug1-47.gif",
-    "anim": "img/ap-2023-06-03-venus-x1_anim.gif"
+    "anim": "img/ap-2023-06-03-venus-x1_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -3810,7 +4019,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 121.682,
   "dec": 22.843,
-  "img": "img/ap-2023-06-04-venus-mars-m44.jpg",
+  "lab": "img/ap-2023-06-04-venus-mars-m44_labels.jpg",
+    "img": "img/ap-2023-06-04-venus-mars-m44.jpg",
   "th": "img/ap-2023-06-04-venus-mars-m44_th.jpg",
   "tw": 640,
   "thh": 475,
@@ -3839,7 +4049,15 @@ const ITEMS = [
     "thh": 480
    }
   ],
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 123.42208,
+   "dec": 21.53743,
+   "s": 0.0223633,
+   "rot": 32.29,
+   "mir": 0,
+   "w": 1200
+  }
  },
  {
   "id": "ap-2023-06-05-venus",
@@ -3913,7 +4131,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 168.446,
   "dec": 7.963,
-  "img": "img/ap-2023-06-24-moon.jpg",
+  "lab": "img/ap-2023-06-24-moon_labels.jpg",
+    "img": "img/ap-2023-06-24-moon.jpg",
   "th": "img/ap-2023-06-24-moon_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -4056,13 +4275,14 @@ const ITEMS = [
   "con": "Serpens",
   "ra": 227.991,
   "dec": 21.623,
-  "img": "img/ap-2023-07-08-c-2019-t4-atlas.jpg",
+  "lab": "img/ap-2023-07-08-c-2019-t4-atlas_labels.jpg",
+    "img": "img/ap-2023-07-08-c-2019-t4-atlas.jpg",
   "th": "img/ap-2023-07-08-c-2019-t4-atlas_th.jpg",
   "tw": 640,
   "thh": 640,
   "w": 2500,
   "h": 2500,
-  "anim": "img/ap-2023-07-08-c-2019-t4-atlas_anim.gif",
+  "anim": "img/ap-2023-07-08-c-2019-t4-atlas_anim.webp",
   "file": "c2019t4_anim.gif",
   "ts": "2023-07-08T20:20",
   "src": "Astropolis",
@@ -4074,7 +4294,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 64,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 228.05894,
+   "dec": 21.77343,
+   "s": 0.000355556,
+   "rot": 209.88,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2023-07-08-jupiter",
@@ -4117,7 +4345,8 @@ const ITEMS = [
   "con": "Pisces",
   "ra": 4.212,
   "dec": -1.668,
-  "img": "img/ap-2023-07-08-moon.jpg",
+  "lab": "img/ap-2023-07-08-moon_labels.jpg",
+    "img": "img/ap-2023-07-08-moon.jpg",
   "th": "img/ap-2023-07-08-moon_th.jpg",
   "tw": 640,
   "thh": 366,
@@ -4381,7 +4610,8 @@ const ITEMS = [
   "con": "Draco",
   "ra": 271.922,
   "dec": 79.763,
-  "img": "img/ap-2023-07-14-c-2023-e1-atlas.jpg",
+  "lab": "img/ap-2023-07-14-c-2023-e1-atlas_labels.jpg",
+    "img": "img/ap-2023-07-14-c-2023-e1-atlas.jpg",
   "th": "img/ap-2023-07-14-c-2023-e1-atlas_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -4399,7 +4629,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 8,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 264.26541,
+   "dec": 80.25846,
+   "s": 0.00477889,
+   "rot": 88.3,
+   "mir": 0,
+   "w": 900
+  }
  },
  {
   "id": "ap-2023-07-15-sun",
@@ -4754,7 +4992,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2023-08-20-jupiter_anim.gif",
+  "anim": "img/ap-2023-08-20-jupiter_anim.webp",
   "file": "jupiter_ganymede.png",
   "ts": "2023-08-21T02:50",
   "src": "Astropolis",
@@ -4775,7 +5013,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "jupiter_anim.gif",
-    "anim": "img/ap-2023-08-20-jupiter-x1_anim.gif"
+    "anim": "img/ap-2023-08-20-jupiter-x1_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -4848,7 +5086,7 @@ const ITEMS = [
   "thh": 406,
   "w": 1123,
   "h": 713,
-  "anim": "img/ap-2023-08-22-jupiter_anim.gif",
+  "anim": "img/ap-2023-08-22-jupiter_anim.webp",
   "file": "Jupiter_anim.gif",
   "ts": "2023-08-23T02:50",
   "src": "Astropolis",
@@ -4924,7 +5162,8 @@ const ITEMS = [
   "con": "Cetus",
   "ra": 6.718,
   "dec": 0.293,
-  "img": "img/ap-2023-09-01-moon.jpg",
+  "lab": "img/ap-2023-09-01-moon_labels.jpg",
+    "img": "img/ap-2023-09-01-moon.jpg",
   "th": "img/ap-2023-09-01-moon_th.jpg",
   "tw": 640,
   "thh": 380,
@@ -5033,7 +5272,7 @@ const ITEMS = [
   "thh": 294,
   "w": 1700,
   "h": 781,
-  "anim": "img/ap-2023-09-03-jupiter_anim.gif",
+  "anim": "img/ap-2023-09-03-jupiter_anim.webp",
   "file": "jupiter_io_ganimede.png",
   "ts": "2023-09-04T02:50",
   "src": "Astropolis",
@@ -5106,7 +5345,7 @@ const ITEMS = [
   "thh": 359,
   "w": 1184,
   "h": 665,
-  "anim": "img/ap-2023-09-04-jupiter_anim.gif",
+  "anim": "img/ap-2023-09-04-jupiter_anim.webp",
   "file": "as-jupiter_moons_anim.gif",
   "ts": "2023-09-05T02:40",
   "src": "Astropolis",
@@ -5127,7 +5366,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "as-jupiter_anim.gif",
-    "anim": "img/ap-2023-09-04-jupiter-x1_anim.gif"
+    "anim": "img/ap-2023-09-04-jupiter-x1_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -5242,7 +5481,7 @@ const ITEMS = [
   "thh": 334,
   "w": 1486,
   "h": 776,
-  "anim": "img/ap-2023-09-16-uranus_anim.gif",
+  "anim": "img/ap-2023-09-16-uranus_anim.webp",
   "file": "uranus_moons.gif",
   "ts": "2023-09-17T02:30",
   "src": "Astropolis",
@@ -5273,7 +5512,7 @@ const ITEMS = [
   "thh": 354,
   "w": 1050,
   "h": 580,
-  "anim": "img/ap-2023-09-17-jupiter_anim.gif",
+  "anim": "img/ap-2023-09-17-jupiter_anim.webp",
   "file": "Jupiter_moons.png",
   "ts": "2023-09-18T01:50",
   "src": "Astropolis",
@@ -5386,7 +5625,7 @@ const ITEMS = [
   "thh": 240,
   "w": 640,
   "h": 480,
-  "anim": "img/ap-2023-09-21-jupiter_anim.gif",
+  "anim": "img/ap-2023-09-21-jupiter_anim.webp",
   "file": "jupiter_io_edge.png",
   "ts": "2023-09-21T23:13",
   "src": "Astropolis",
@@ -5458,7 +5697,7 @@ const ITEMS = [
     "tw": 640,
     "thh": 350,
     "file": "Jupiter_anim.gif",
-    "anim": "img/ap-2023-09-21-jupiter-x6_anim.gif"
+    "anim": "img/ap-2023-09-21-jupiter-x6_anim.webp"
    }
   ],
   "tsApprox": false,
@@ -5643,7 +5882,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/ap-2023-09-28-jupiter_anim.gif",
+  "anim": "img/ap-2023-09-28-jupiter_anim.webp",
   "file": "jupiter-nxt-ir.gif",
   "ts": "2023-09-29T01:10",
   "src": "Astropolis",
@@ -5664,7 +5903,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "jupiter-nxt-color.gif",
-    "anim": "img/ap-2023-09-28-jupiter-x1_anim.gif"
+    "anim": "img/ap-2023-09-28-jupiter-x1_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -5777,7 +6016,7 @@ const ITEMS = [
   "thh": 407,
   "w": 1051,
   "h": 669,
-  "anim": "img/ap-2023-10-07-jupiter_anim.gif",
+  "anim": "img/ap-2023-10-07-jupiter_anim.webp",
   "file": "jupiter-3400.png",
   "ts": "2023-10-08T00:30",
   "src": "Astropolis",
@@ -5912,7 +6151,7 @@ const ITEMS = [
   "thh": 358,
   "w": 1600,
   "h": 896,
-  "anim": "img/ap-2023-10-11-jupiter_anim.gif",
+  "anim": "img/ap-2023-10-11-jupiter_anim.webp",
   "file": "Jupiter_moons_AS_WS.png",
   "ts": "2023-10-12T00:10",
   "src": "Astropolis",
@@ -6162,7 +6401,7 @@ const ITEMS = [
   "thh": 320,
   "w": 640,
   "h": 640,
-  "anim": "img/ap-2023-11-08-jupiter_anim.gif",
+  "anim": "img/ap-2023-11-08-jupiter_anim.webp",
   "file": "Jupiter_5minutes_WS.png",
   "ts": "2023-11-08T22:10",
   "src": "Astropolis",
@@ -6350,7 +6589,7 @@ const ITEMS = [
   "thh": 347,
   "w": 1063,
   "h": 576,
-  "anim": "img/ap-2023-11-27-jupiter_anim.gif",
+  "anim": "img/ap-2023-11-27-jupiter_anim.webp",
   "file": "jupiter-imppg-denoise.png",
   "ts": "2023-11-27T20:40",
   "src": "Astropolis",
@@ -6468,7 +6707,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2023-12-24-jupiter_anim.gif",
+  "anim": "img/ap-2023-12-24-jupiter_anim.webp",
   "file": "jupiter_europe_shadow.gif",
   "ts": "2023-12-24T18:50",
   "src": "Astropolis",
@@ -6489,7 +6728,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "jupiter_io_europe_ganymede-shadow.gif",
-    "anim": "img/ap-2023-12-24-jupiter-x1_anim.gif"
+    "anim": "img/ap-2023-12-24-jupiter-x1_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -6612,7 +6851,8 @@ const ITEMS = [
   "con": "Aries",
   "ra": 32.005,
   "dec": 13.751,
-  "img": "img/ap-2024-01-18-moon-jupiter.jpg",
+  "lab": "img/ap-2024-01-18-moon-jupiter_labels.jpg",
+    "img": "img/ap-2024-01-18-moon-jupiter.jpg",
   "th": "img/ap-2024-01-18-moon-jupiter_th.jpg",
   "tw": 640,
   "thh": 516,
@@ -6830,7 +7070,8 @@ const ITEMS = [
   "con": "Auriga",
   "ra": 94.38,
   "dec": 28.121,
-  "img": "img/ap-2024-03-17-moon.jpg",
+  "lab": "img/ap-2024-03-17-moon_labels.jpg",
+    "img": "img/ap-2024-03-17-moon.jpg",
   "th": "img/ap-2024-03-17-moon_th.jpg",
   "tw": 640,
   "thh": 481,
@@ -6896,7 +7137,8 @@ const ITEMS = [
   "con": "Canes Venatici",
   "ra": 202.4696,
   "dec": 47.1952,
-  "img": "img/ap-2024-04-10-m51.jpg",
+  "lab": "img/ap-2024-04-10-m51_labels.jpg",
+    "img": "img/ap-2024-04-10-m51.jpg",
   "th": "img/ap-2024-04-10-m51_th.jpg",
   "tw": 640,
   "thh": 418,
@@ -6914,7 +7156,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 7,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 202.46984,
+   "dec": 47.19463,
+   "s": 0.000284167,
+   "rot": 295.0,
+   "mir": 0,
+   "w": 1200
+  }
  },
  {
   "id": "ap-2024-04-12-moon-pleiades",
@@ -6926,7 +7176,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 74.489,
   "dec": 26.814,
-  "img": "img/ap-2024-04-12-moon-pleiades.jpg",
+  "lab": "img/ap-2024-04-12-moon-pleiades_labels.jpg",
+    "img": "img/ap-2024-04-12-moon-pleiades.jpg",
   "th": "img/ap-2024-04-12-moon-pleiades_th.jpg",
   "tw": 640,
   "thh": 445,
@@ -6956,7 +7207,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 89.618,
   "dec": 28.031,
-  "img": "img/ap-2024-04-13-moon-pleiades.jpg",
+  "lab": "img/ap-2024-04-13-moon-pleiades_labels.jpg",
+    "img": "img/ap-2024-04-13-moon-pleiades.jpg",
   "th": "img/ap-2024-04-13-moon-pleiades_th.jpg",
   "tw": 640,
   "thh": 481,
@@ -6990,7 +7242,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 131.607,
   "dec": 22.5,
-  "img": "img/ap-2024-04-16-moon.jpg",
+  "lab": "img/ap-2024-04-16-moon_labels.jpg",
+    "img": "img/ap-2024-04-16-moon.jpg",
   "th": "img/ap-2024-04-16-moon_th.jpg",
   "tw": 640,
   "thh": 492,
@@ -7020,7 +7273,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 195.244,
   "dec": 0.282,
-  "img": "img/ap-2024-05-08-c-2023-a3-tsuchinshan-atlas.jpg",
+  "lab": "img/ap-2024-05-08-c-2023-a3-tsuchinshan-atlas_labels.jpg",
+    "img": "img/ap-2024-05-08-c-2023-a3-tsuchinshan-atlas.jpg",
   "th": "img/ap-2024-05-08-c-2023-a3-tsuchinshan-atlas_th.jpg",
   "tw": 640,
   "thh": 360,
@@ -7038,7 +7292,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 1,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 195.91449,
+   "dec": 0.14623,
+   "s": 0.000344444,
+   "rot": 0.28,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2024-05-10-c-2023-a3-tsuchinshan-atlas",
@@ -7050,7 +7312,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 193.866,
   "dec": 0.547,
-  "img": "img/ap-2024-05-10-c-2023-a3-tsuchinshan-atlas.jpg",
+  "lab": "img/ap-2024-05-10-c-2023-a3-tsuchinshan-atlas_labels.jpg",
+    "img": "img/ap-2024-05-10-c-2023-a3-tsuchinshan-atlas.jpg",
   "th": "img/ap-2024-05-10-c-2023-a3-tsuchinshan-atlas_th.jpg",
   "tw": 640,
   "thh": 359,
@@ -7068,7 +7331,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 9,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 195.25982,
+   "dec": 0.28381,
+   "s": 0.000149167,
+   "rot": 4.06,
+   "mir": 0,
+   "w": 1200
+  }
  },
  {
   "id": "ap-2024-05-11-aurora",
@@ -7147,7 +7418,8 @@ const ITEMS = [
   "con": "Gemini",
   "ra": 113.781,
   "dec": 26.178,
-  "img": "img/ap-2024-05-12-moon.jpg",
+  "lab": "img/ap-2024-05-12-moon_labels.jpg",
+    "img": "img/ap-2024-05-12-moon.jpg",
   "th": "img/ap-2024-05-12-moon_th.jpg",
   "tw": 444,
   "thh": 640,
@@ -7224,7 +7496,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-05-14-iss_anim.gif",
+  "anim": "img/ap-2024-05-14-iss_anim.webp",
   "file": "2024-05-14-1959_2-ISS_f12853.png",
   "ts": null,
   "src": "Astropolis",
@@ -7251,7 +7523,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 162.993,
   "dec": 9.627,
-  "img": "img/ap-2024-05-16-moon.jpg",
+  "lab": "img/ap-2024-05-16-moon_labels.jpg",
+    "img": "img/ap-2024-05-16-moon.jpg",
   "th": "img/ap-2024-05-16-moon_th.jpg",
   "tw": 640,
   "thh": 450,
@@ -7319,7 +7592,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 173.675,
   "dec": 4.111,
-  "img": "img/ap-2024-05-17-moon.jpg",
+  "lab": "img/ap-2024-05-17-moon_labels.jpg",
+    "img": "img/ap-2024-05-17-moon.jpg",
   "th": "img/ap-2024-05-17-moon_th.jpg",
   "tw": 640,
   "thh": 322,
@@ -7349,7 +7623,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 173.675,
   "dec": 4.111,
-  "img": "img/ap-2024-05-17-moon-iss.jpg",
+  "lab": "img/ap-2024-05-17-moon-iss_labels.jpg",
+    "img": "img/ap-2024-05-17-moon-iss.jpg",
   "th": "img/ap-2024-05-17-moon-iss_th.jpg",
   "tw": 640,
   "thh": 362,
@@ -7383,7 +7658,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 184.205,
   "dec": -1.576,
-  "img": "img/ap-2024-05-18-moon.jpg",
+  "lab": "img/ap-2024-05-18-moon_labels.jpg",
+    "img": "img/ap-2024-05-18-moon.jpg",
   "th": "img/ap-2024-05-18-moon_th.jpg",
   "tw": 640,
   "thh": 426,
@@ -7413,7 +7689,8 @@ const ITEMS = [
   "con": "Libra",
   "ra": 230.926,
   "dec": -22.892,
-  "img": "img/ap-2024-05-22-moon.jpg",
+  "lab": "img/ap-2024-05-22-moon_labels.jpg",
+    "img": "img/ap-2024-05-22-moon.jpg",
   "th": "img/ap-2024-05-22-moon_th.jpg",
   "tw": 640,
   "thh": 368,
@@ -7499,7 +7776,7 @@ const ITEMS = [
   "thh": 320,
   "w": 600,
   "h": 600,
-  "anim": "img/ap-2024-07-15-iss_anim.gif",
+  "anim": "img/ap-2024-07-15-iss_anim.webp",
   "file": "2024-07-15-2018_6-ISS_AS_stacked.png",
   "ts": null,
   "src": "Astropolis",
@@ -7718,7 +7995,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-07-25-saturn_anim.gif",
+  "anim": "img/ap-2024-07-25-saturn_anim.webp",
   "file": "saturn_anim_imppg.gif",
   "ts": "2024-07-26T01:50",
   "src": "Astropolis",
@@ -7747,7 +8024,8 @@ const ITEMS = [
   "con": "Pisces",
   "ra": 18.881,
   "dec": 8.326,
-  "img": "img/ap-2024-07-26-moon.jpg",
+  "lab": "img/ap-2024-07-26-moon_labels.jpg",
+    "img": "img/ap-2024-07-26-moon.jpg",
   "th": "img/ap-2024-07-26-moon_th.jpg",
   "tw": 640,
   "thh": 336,
@@ -7854,7 +8132,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-08-01-saturn_anim.gif",
+  "anim": "img/ap-2024-08-01-saturn_anim.webp",
   "file": "saturn_all_anim.gif",
   "ts": "2024-08-02T01:20",
   "src": "Astropolis",
@@ -7875,7 +8153,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "saturn_UVIR_anim.gif",
-    "anim": "img/ap-2024-08-01-saturn-x1_anim.gif"
+    "anim": "img/ap-2024-08-01-saturn-x1_anim.webp"
    },
    {
     "img": "img/ap-2024-08-01-saturn-x2.jpg",
@@ -7885,7 +8163,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "saturn_nofilter_anim.gif",
-    "anim": "img/ap-2024-08-01-saturn-x2_anim.gif"
+    "anim": "img/ap-2024-08-01-saturn-x2_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -8139,7 +8417,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-08-27-saturn_anim.gif",
+  "anim": "img/ap-2024-08-27-saturn_anim.webp",
   "file": "2024-08-27-2211_5-Saturn_pipp_lapl6_ap21_conv_AS_withmoon.png",
   "ts": "2024-08-27T22:11",
   "src": "Astropolis",
@@ -8206,7 +8484,7 @@ const ITEMS = [
   "thh": 320,
   "w": 640,
   "h": 640,
-  "anim": "img/ap-2024-09-02-saturn_anim.gif",
+  "anim": "img/ap-2024-09-02-saturn_anim.webp",
   "file": "Saturn-Titan-Rhea-Dione-Mimas.png",
   "ts": "2024-09-02T23:10",
   "src": "Astropolis",
@@ -8237,7 +8515,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-09-05-saturn_anim.gif",
+  "anim": "img/ap-2024-09-05-saturn_anim.webp",
   "file": "Saturn_Tethys.png",
   "ts": "2024-09-05T23:00",
   "src": "Astropolis",
@@ -8258,7 +8536,7 @@ const ITEMS = [
     "tw": 320,
     "thh": 320,
     "file": "Saturn_Tethys_closeup.gif",
-    "anim": "img/ap-2024-09-05-saturn-x1_anim.gif"
+    "anim": "img/ap-2024-09-05-saturn-x1_anim.webp"
    }
   ],
   "tsApprox": true,
@@ -8280,7 +8558,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-09-06-saturn_anim.gif",
+  "anim": "img/ap-2024-09-06-saturn_anim.webp",
   "file": "Saturn_single_contrast.png",
   "ts": "2024-09-06T22:50",
   "src": "Astropolis",
@@ -8311,7 +8589,7 @@ const ITEMS = [
   "thh": 397,
   "w": 1024,
   "h": 635,
-  "anim": "img/ap-2024-09-11-saturn_anim.gif",
+  "anim": "img/ap-2024-09-11-saturn_anim.webp",
   "file": "Saturn_Titan_Dione_Rhea_Tethys.png",
   "ts": "2024-09-11T22:30",
   "src": "Astropolis",
@@ -8342,7 +8620,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-09-24-saturn_anim.gif",
+  "anim": "img/ap-2024-09-24-saturn_anim.webp",
   "file": "Saturn_static2.png",
   "ts": "2024-09-24T21:40",
   "src": "Astropolis",
@@ -8373,7 +8651,7 @@ const ITEMS = [
   "thh": 285,
   "w": 866,
   "h": 386,
-  "anim": "img/ap-2024-09-30-saturn_anim.gif",
+  "anim": "img/ap-2024-09-30-saturn_anim.webp",
   "file": "Saturn_Dione_Tethys2.png",
   "ts": "2024-09-30T21:10",
   "src": "Astropolis",
@@ -8398,7 +8676,8 @@ const ITEMS = [
   "con": "Serpens",
   "ra": 228.135,
   "dec": 0.645,
-  "img": "img/ap-2024-10-15-c-2023-a3-tsuchinshan-atlas.jpg",
+  "lab": "img/ap-2024-10-15-c-2023-a3-tsuchinshan-atlas_labels.jpg",
+    "img": "img/ap-2024-10-15-c-2023-a3-tsuchinshan-atlas.jpg",
   "th": "img/ap-2024-10-15-c-2023-a3-tsuchinshan-atlas_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -8416,7 +8695,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 95,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 231.7411,
+   "dec": 1.5332,
+   "s": 0.005235,
+   "rot": 31.8,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "ap-2024-10-20-jupiter",
@@ -8434,7 +8721,7 @@ const ITEMS = [
   "thh": 640,
   "w": 680,
   "h": 680,
-  "anim": "img/ap-2024-10-20-jupiter_anim.gif",
+  "anim": "img/ap-2024-10-20-jupiter_anim.webp",
   "file": "Jupiter_pipp_lapl6_ap28_convAS_pipp2.gif",
   "ts": "2024-10-21T02:10",
   "src": "Astropolis",
@@ -8574,36 +8861,6 @@ const ITEMS = [
   "ang": 2.35
  },
  {
-  "id": "ap-2024-10-26-m37",
-  "date": "2024-10-26",
-  "t": "M37",
-  "target": "M37",
-  "kind": "Open cluster",
-  "cat": "deep",
-  "con": "Auriga",
-  "ra": 88.074,
-  "dec": 32.553,
-  "img": "img/ap-2024-10-26-m37.jpg",
-  "th": "img/ap-2024-10-26-m37_th.jpg",
-  "tw": 640,
-  "thh": 338,
-  "w": 1362,
-  "h": 720,
-  "anim": null,
-  "file": "M37.png",
-  "ts": "2024-10-27T03:10",
-  "src": "Astropolis",
-  "site": [
-   54.5614,
-   18.5448,
-   "Gdynia"
-  ],
-  "det": {},
-  "fav": false,
-  "moonIllum": 24,
-  "tsApprox": true
- },
- {
   "id": "ap-2024-10-30-c-2023-a3-tsuchinshan-atlas",
   "date": "2024-10-30",
   "t": "C/2023 A3 (Tsuchinshan–ATLAS)",
@@ -8613,7 +8870,8 @@ const ITEMS = [
   "con": "Ophiuchus",
   "ra": 268.326,
   "dec": 3.669,
-  "img": "img/ap-2024-10-30-c-2023-a3-tsuchinshan-atlas.jpg",
+  "lab": "img/ap-2024-10-30-c-2023-a3-tsuchinshan-atlas_labels.jpg",
+    "img": "img/ap-2024-10-30-c-2023-a3-tsuchinshan-atlas.jpg",
   "th": "img/ap-2024-10-30-c-2023-a3-tsuchinshan-atlas_th.jpg",
   "tw": 480,
   "thh": 640,
@@ -8631,7 +8889,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 3,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 267.5774,
+   "dec": 3.65667,
+   "s": 0.000213916,
+   "rot": 74.94,
+   "mir": 0,
+   "w": 1351
+  }
  },
  {
   "id": "ap-2024-11-01-jupiter",
@@ -8721,7 +8987,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2024-11-02-mars_anim.gif",
+  "anim": "img/ap-2024-11-02-mars_anim.webp",
   "file": "Mars_pipp_lapl6_ap18_out.png",
   "ts": "2024-11-03T04:00",
   "src": "Astropolis",
@@ -8792,7 +9058,7 @@ const ITEMS = [
   "thh": 378,
   "w": 1152,
   "h": 680,
-  "anim": "img/ap-2024-11-10-jupiter_anim.gif",
+  "anim": "img/ap-2024-11-10-jupiter_anim.webp",
   "file": "Ganymede_Jupiter2.gif",
   "ts": "2024-11-11T00:40",
   "src": "Astropolis",
@@ -9048,7 +9314,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2025-01-07-mars_anim.gif",
+  "anim": "img/ap-2025-01-07-mars_anim.webp",
   "file": "Mars_pipp_lapl6_ap28_conv_AS2.png",
   "ts": "2025-01-07T23:40",
   "src": "Astropolis",
@@ -9551,7 +9817,7 @@ const ITEMS = [
   "thh": 385,
   "w": 1831,
   "h": 1101,
-  "anim": "img/ap-2025-02-09-moon-mars_anim.gif",
+  "anim": "img/ap-2025-02-09-moon-mars_anim.webp",
   "file": "Moon_Mars_Color_size.png",
   "ts": "2025-02-09T20:50",
   "src": "Astropolis",
@@ -9612,7 +9878,7 @@ const ITEMS = [
   "thh": 357,
   "w": 1726,
   "h": 964,
-  "anim": "img/ap-2025-02-15-jupiter_anim.gif",
+  "anim": "img/ap-2025-02-15-jupiter_anim.webp",
   "file": "2025-02-15-1743_1-Jupiter_lapl6_ap23_conv_WSB-PS.png",
   "ts": "2025-02-15T17:43",
   "src": "Astropolis",
@@ -9866,7 +10132,8 @@ const ITEMS = [
   "con": "Auriga",
   "ra": 90.455,
   "dec": 28.286,
-  "img": "img/ap-2025-03-07-moon.jpg",
+  "lab": "img/ap-2025-03-07-moon_labels.jpg",
+    "img": "img/ap-2025-03-07-moon.jpg",
   "th": "img/ap-2025-03-07-moon_th.jpg",
   "tw": 640,
   "thh": 348,
@@ -9896,7 +10163,8 @@ const ITEMS = [
   "con": "Gemini",
   "ra": 105.906,
   "dec": 27.288,
-  "img": "img/ap-2025-03-08-moon.jpg",
+  "lab": "img/ap-2025-03-08-moon_labels.jpg",
+    "img": "img/ap-2025-03-08-moon.jpg",
   "th": "img/ap-2025-03-08-moon_th.jpg",
   "tw": 640,
   "thh": 355,
@@ -10127,7 +10395,7 @@ const ITEMS = [
   "thh": 640,
   "w": 960,
   "h": 960,
-  "anim": "img/ap-2025-03-16-jupiter_anim.gif",
+  "anim": "img/ap-2025-03-16-jupiter_anim.webp",
   "file": "jupiter-europa-io-drizzle.png",
   "ts": "2025-03-16T17:30",
   "src": "Astropolis",
@@ -10391,7 +10659,8 @@ const ITEMS = [
   "con": "Taurus",
   "ra": 86.147,
   "dec": 28.184,
-  "img": "img/ap-2025-04-03-moon.jpg",
+  "lab": "img/ap-2025-04-03-moon_labels.jpg",
+    "img": "img/ap-2025-04-03-moon.jpg",
   "th": "img/ap-2025-04-03-moon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -10611,7 +10880,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 143.564,
   "dec": 17.225,
-  "img": "img/ap-2025-04-07-moon.jpg",
+  "lab": "img/ap-2025-04-07-moon_labels.jpg",
+    "img": "img/ap-2025-04-07-moon.jpg",
   "th": "img/ap-2025-04-07-moon_th.jpg",
   "tw": 327,
   "thh": 640,
@@ -10661,7 +10931,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 166.956,
   "dec": 6.063,
-  "img": "img/ap-2025-04-09-moon.jpg",
+  "lab": "img/ap-2025-04-09-moon_labels.jpg",
+    "img": "img/ap-2025-04-09-moon.jpg",
   "th": "img/ap-2025-04-09-moon_th.jpg",
   "tw": 640,
   "thh": 368,
@@ -10711,7 +10982,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 199.568,
   "dec": -11.468,
-  "img": "img/ap-2025-04-12-moon.jpg",
+  "lab": "img/ap-2025-04-12-moon_labels.jpg",
+    "img": "img/ap-2025-04-12-moon.jpg",
   "th": "img/ap-2025-04-12-moon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -10751,7 +11023,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/ap-2025-04-13-mars_anim.gif",
+  "anim": "img/ap-2025-04-13-mars_anim.webp",
   "file": "mars-gauss3.gif",
   "ts": "2025-04-13T18:30",
   "src": "Astropolis",
@@ -10776,7 +11048,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 210.92,
   "dec": -16.784,
-  "img": "img/ap-2025-04-13-moon.jpg",
+  "lab": "img/ap-2025-04-13-moon_labels.jpg",
+    "img": "img/ap-2025-04-13-moon.jpg",
   "th": "img/ap-2025-04-13-moon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -10857,7 +11130,8 @@ const ITEMS = [
   "con": "Ursa Major",
   "ra": 179.4,
   "dec": 53.3745,
-  "img": "img/ap-2025-04-22-m109.jpg",
+  "lab": "img/ap-2025-04-22-m109_labels.jpg",
+    "img": "img/ap-2025-04-22-m109.jpg",
   "th": "img/ap-2025-04-22-m109_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -10875,7 +11149,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 30,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 179.39724,
+   "dec": 53.37839,
+   "s": 0.000157132,
+   "rot": 4.35,
+   "mir": 1,
+   "w": 1311
+  }
  },
  {
   "id": "ap-2025-04-26-m51",
@@ -10887,7 +11169,8 @@ const ITEMS = [
   "con": "Canes Venatici",
   "ra": 202.4696,
   "dec": 47.1952,
-  "img": "img/ap-2025-04-26-m51.jpg",
+  "lab": "img/ap-2025-04-26-m51_labels.jpg",
+    "img": "img/ap-2025-04-26-m51.jpg",
   "th": "img/ap-2025-04-26-m51_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -10905,7 +11188,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 1,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 202.4802,
+   "dec": 47.2137,
+   "s": 0.000142521,
+   "rot": 275.64,
+   "mir": 1,
+   "w": 1698
+  }
  },
  {
   "id": "ap-2025-05-01-moon",
@@ -10917,7 +11208,8 @@ const ITEMS = [
   "con": "Gemini",
   "ra": 96.91,
   "dec": 27.716,
-  "img": "img/ap-2025-05-01-moon.jpg",
+  "lab": "img/ap-2025-05-01-moon_labels.jpg",
+    "img": "img/ap-2025-05-01-moon.jpg",
   "th": "img/ap-2025-05-01-moon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -10947,7 +11239,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 163.558,
   "dec": 7.663,
-  "img": "img/ap-2025-05-06-moon.jpg",
+  "lab": "img/ap-2025-05-06-moon_labels.jpg",
+    "img": "img/ap-2025-05-06-moon.jpg",
   "th": "img/ap-2025-05-06-moon_th.jpg",
   "tw": 640,
   "thh": 424,
@@ -10997,7 +11290,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 185.124,
   "dec": -3.944,
-  "img": "img/ap-2025-05-08-moon.jpg",
+  "lab": "img/ap-2025-05-08-moon_labels.jpg",
+    "img": "img/ap-2025-05-08-moon.jpg",
   "th": "img/ap-2025-05-08-moon_th.jpg",
   "tw": 640,
   "thh": 428,
@@ -11056,7 +11350,8 @@ const ITEMS = [
   "con": "Libra",
   "ra": 218.382,
   "dec": -19.723,
-  "img": "img/ap-2025-05-11-moon.jpg",
+  "lab": "img/ap-2025-05-11-moon_labels.jpg",
+    "img": "img/ap-2025-05-11-moon.jpg",
   "th": "img/ap-2025-05-11-moon_th.jpg",
   "tw": 640,
   "thh": 458,
@@ -11151,7 +11446,8 @@ const ITEMS = [
   "con": "Ursa Major",
   "ra": 148.9685,
   "dec": 69.6797,
-  "img": "img/ap-2025-05-24-m82.jpg",
+  "lab": "img/ap-2025-05-24-m82_labels.jpg",
+    "img": "img/ap-2025-05-24-m82.jpg",
   "th": "img/ap-2025-05-24-m82_th.jpg",
   "tw": 640,
   "thh": 448,
@@ -11169,7 +11465,15 @@ const ITEMS = [
   "det": {},
   "fav": false,
   "moonIllum": 8,
-  "tsApprox": true
+  "tsApprox": true,
+  "wcs": {
+   "ra": 148.97579,
+   "dec": 69.67286,
+   "s": 0.000125556,
+   "rot": 94.19,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-06-15-sun",
@@ -11273,7 +11577,8 @@ const ITEMS = [
   "con": "Hercules",
   "ra": 250.421,
   "dec": 36.46,
-  "img": "img/2025-06-21-m13.jpg",
+  "lab": "img/2025-06-21-m13_labels.jpg",
+    "img": "img/2025-06-21-m13.jpg",
   "th": "img/2025-06-21-m13_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -11301,7 +11606,15 @@ const ITEMS = [
    ]
   },
   "fav": false,
-  "moonIllum": 27
+  "moonIllum": 27,
+  "wcs": {
+   "ra": 250.42318,
+   "dec": 36.45902,
+   "s": 0.000450808,
+   "rot": 281.31,
+   "mir": 1,
+   "w": 1362
+  }
  },
  {
   "id": "2025-06-21-saturn",
@@ -11402,7 +11715,8 @@ const ITEMS = [
   "con": "Andromeda",
   "ra": 351.475,
   "dec": 42.535,
-  "img": "img/2025-07-14-ngc-7662.jpg",
+  "lab": "img/2025-07-14-ngc-7662_labels.jpg",
+    "img": "img/2025-07-14-ngc-7662.jpg",
   "th": "img/2025-07-14-ngc-7662_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -11427,7 +11741,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 82
+  "moonIllum": 82,
+  "wcs": {
+   "ra": 351.47431,
+   "dec": 42.53464,
+   "s": 8.01688e-05,
+   "rot": 92.66,
+   "mir": 0,
+   "w": 948
+  }
  },
  {
   "id": "2025-07-14-saturn",
@@ -11474,7 +11796,8 @@ const ITEMS = [
   "con": "Vulpecula",
   "ra": 299.9,
   "dec": 22.721,
-  "img": "img/2025-07-17-m27.jpg",
+  "lab": "img/2025-07-17-m27_labels.jpg",
+    "img": "img/2025-07-17-m27.jpg",
   "th": "img/2025-07-17-m27_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -11501,7 +11824,15 @@ const ITEMS = [
    ]
   },
   "fav": true,
-  "moonIllum": 51
+  "moonIllum": 51,
+  "wcs": {
+   "ra": 299.90216,
+   "dec": 22.721,
+   "s": 0.000363333,
+   "rot": 358.3,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-07-21-ngc-6503",
@@ -11513,7 +11844,8 @@ const ITEMS = [
   "con": "Draco",
   "ra": 267.363,
   "dec": 70.144,
-  "img": "img/2025-07-21-ngc-6503.jpg",
+  "lab": "img/2025-07-21-ngc-6503_labels.jpg",
+    "img": "img/2025-07-21-ngc-6503.jpg",
   "th": "img/2025-07-21-ngc-6503_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -11537,7 +11869,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 11
+  "moonIllum": 11,
+  "wcs": {
+   "ra": 267.3667,
+   "dec": 70.14211,
+   "s": 0.000378333,
+   "rot": 268.14,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-07-21-saturn",
@@ -11584,7 +11924,8 @@ const ITEMS = [
   "con": "Draco",
   "ra": 269.637,
   "dec": 66.633,
-  "img": "img/2025-07-25-ngc-6543.jpg",
+  "lab": "img/2025-07-25-ngc-6543_labels.jpg",
+    "img": "img/2025-07-25-ngc-6543.jpg",
   "th": "img/2025-07-25-ngc-6543_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -11601,7 +11942,15 @@ const ITEMS = [
   "tsApprox": true,
   "det": {},
   "fav": false,
-  "moonIllum": 1
+  "moonIllum": 1,
+  "wcs": {
+   "ra": 269.63834,
+   "dec": 66.63266,
+   "s": 0.000372778,
+   "rot": 271.0,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-07-29-m39",
@@ -11613,7 +11962,8 @@ const ITEMS = [
   "con": "Cygnus",
   "ra": 322.95,
   "dec": 48.433,
-  "img": "img/2025-07-29-m39.jpg",
+  "lab": "img/2025-07-29-m39_labels.jpg",
+    "img": "img/2025-07-29-m39.jpg",
   "th": "img/2025-07-29-m39_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -11637,7 +11987,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 26
+  "moonIllum": 26,
+  "wcs": {
+   "ra": 322.94908,
+   "dec": 48.42721,
+   "s": 0.000509444,
+   "rot": 274.64,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "2025-07-29-saturn",
@@ -11684,7 +12042,8 @@ const ITEMS = [
   "con": "Lyra",
   "ra": 289.15,
   "dec": 30.183,
-  "img": "img/2025-08-05-m56.jpg",
+  "lab": "img/2025-08-05-m56_labels.jpg",
+    "img": "img/2025-08-05-m56.jpg",
   "th": "img/2025-08-05-m56_th.jpg",
   "tw": 640,
   "thh": 427,
@@ -11708,7 +12067,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 88
+  "moonIllum": 88,
+  "wcs": {
+   "ra": 289.14937,
+   "dec": 30.18279,
+   "s": 0.000498889,
+   "rot": 90.94,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "2025-08-06-ngc-7023",
@@ -11720,7 +12087,8 @@ const ITEMS = [
   "con": "Cepheus",
   "ra": 315.4,
   "dec": 68.167,
-  "img": "img/2025-08-06-ngc-7023.jpg",
+  "lab": "img/2025-08-06-ngc-7023_labels.jpg",
+    "img": "img/2025-08-06-ngc-7023.jpg",
   "th": "img/2025-08-06-ngc-7023_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -11741,7 +12109,15 @@ const ITEMS = [
    ]
   },
   "fav": false,
-  "moonIllum": 94
+  "moonIllum": 94,
+  "wcs": {
+   "ra": 315.39247,
+   "dec": 68.16313,
+   "s": 0.000432222,
+   "rot": 89.97,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-08-08-ngc-457",
@@ -11753,7 +12129,8 @@ const ITEMS = [
   "con": "Cassiopeia",
   "ra": 19.896,
   "dec": 58.287,
-  "img": "img/2025-08-08-ngc-457.jpg",
+  "lab": "img/2025-08-08-ngc-457_labels.jpg",
+    "img": "img/2025-08-08-ngc-457.jpg",
   "th": "img/2025-08-08-ngc-457_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -11777,7 +12154,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": true,
-  "moonIllum": 100
+  "moonIllum": 100,
+  "wcs": {
+   "ra": 19.88558,
+   "dec": 58.27043,
+   "s": 0.000287778,
+   "rot": 1.56,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-08-08-saturn",
@@ -11824,7 +12209,8 @@ const ITEMS = [
   "con": "Cassiopeia",
   "ra": 23.346,
   "dec": 60.65,
-  "img": "img/2025-08-14-m103.jpg",
+  "lab": "img/2025-08-14-m103_labels.jpg",
+    "img": "img/2025-08-14-m103.jpg",
   "th": "img/2025-08-14-m103_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -11851,7 +12237,15 @@ const ITEMS = [
    ]
   },
   "fav": false,
-  "moonIllum": 76
+  "moonIllum": 76,
+  "wcs": {
+   "ra": 23.36246,
+   "dec": 60.65207,
+   "s": 0.00033,
+   "rot": 359.48,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-08-14-saturn",
@@ -11933,7 +12327,8 @@ const ITEMS = [
   "con": "Cygnus",
   "ra": 305.983,
   "dec": 38.523,
-  "img": "img/2025-08-18-m29.jpg",
+  "lab": "img/2025-08-18-m29_labels.jpg",
+    "img": "img/2025-08-18-m29.jpg",
   "th": "img/2025-08-18-m29_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -11961,7 +12356,15 @@ const ITEMS = [
    ]
   },
   "fav": false,
-  "moonIllum": 22
+  "moonIllum": 22,
+  "wcs": {
+   "ra": 305.99944,
+   "dec": 38.50918,
+   "s": 0.000311321,
+   "rot": 0.88,
+   "mir": 1,
+   "w": 1696
+  }
  },
  {
   "id": "2025-08-18-saturn",
@@ -11979,7 +12382,7 @@ const ITEMS = [
   "thh": 463,
   "w": 640,
   "h": 640,
-  "anim": "img/2025-08-18-saturn_anim.gif",
+  "anim": "img/2025-08-18-saturn_anim.webp",
   "file": "saturn_tytan.png",
   "ts": "2025-08-18T23:17",
   "site": [
@@ -12003,7 +12406,8 @@ const ITEMS = [
   "con": "Cygnus",
   "ra": 305.983,
   "dec": 38.523,
-  "img": "img/2025-08-20-m29.jpg",
+  "lab": "img/2025-08-20-m29_labels.jpg",
+    "img": "img/2025-08-20-m29.jpg",
   "th": "img/2025-08-20-m29_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -12027,7 +12431,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 6
+  "moonIllum": 6,
+  "wcs": {
+   "ra": 306.00436,
+   "dec": 38.49846,
+   "s": 0.000400556,
+   "rot": 91.42,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-09-01-neptune",
@@ -12105,7 +12517,7 @@ const ITEMS = [
   "thh": 421,
   "w": 480,
   "h": 480,
-  "anim": "img/2025-09-19-saturn_anim.gif",
+  "anim": "img/2025-09-19-saturn_anim.webp",
   "file": "2025-09-19-2045_2-Saturn_pipp_lapl6_ap36_conv_WSB.png_pipp.gif",
   "ts": "2025-09-19T20:45",
   "site": [
@@ -12134,7 +12546,8 @@ const ITEMS = [
   "con": "Pegasus",
   "ra": 322.492,
   "dec": 12.167,
-  "img": "img/2025-09-20-m15.jpg",
+  "lab": "img/2025-09-20-m15_labels.jpg",
+    "img": "img/2025-09-20-m15.jpg",
   "th": "img/2025-09-20-m15_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -12158,7 +12571,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 1
+  "moonIllum": 1,
+  "wcs": {
+   "ra": 322.4955,
+   "dec": 12.16802,
+   "s": 0.000338333,
+   "rot": 89.28,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-09-20-sun",
@@ -12293,7 +12714,8 @@ const ITEMS = [
   "con": "Cepheus",
   "ra": 307.875,
   "dec": 60.662,
-  "img": "img/2025-09-23-ngc-6939.jpg",
+  "lab": "img/2025-09-23-ngc-6939_labels.jpg",
+    "img": "img/2025-09-23-ngc-6939.jpg",
   "th": "img/2025-09-23-ngc-6939_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -12321,7 +12743,15 @@ const ITEMS = [
    ]
   },
   "fav": false,
-  "moonIllum": 4
+  "moonIllum": 4,
+  "wcs": {
+   "ra": 307.89757,
+   "dec": 60.66515,
+   "s": 0.000481111,
+   "rot": 89.03,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-09-25-saturn",
@@ -12404,7 +12834,7 @@ const ITEMS = [
   "thh": 375,
   "w": 480,
   "h": 480,
-  "anim": "img/2025-09-27-saturn_anim.gif",
+  "anim": "img/2025-09-27-saturn_anim.webp",
   "file": "Saturn_Tytan_CleanColor.png",
   "ts": "2025-09-27T20:26",
   "site": [
@@ -12428,7 +12858,8 @@ const ITEMS = [
   "con": "Leo Minor",
   "ra": 150.078,
   "dec": 40.988,
-  "img": "img/2025-10-03-c-2025-a6-lemmon.jpg",
+  "lab": "img/2025-10-03-c-2025-a6-lemmon_labels.jpg",
+    "img": "img/2025-10-03-c-2025-a6-lemmon.jpg",
   "th": "img/2025-10-03-c-2025-a6-lemmon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -12445,7 +12876,15 @@ const ITEMS = [
   "tsApprox": false,
   "det": {},
   "fav": false,
-  "moonIllum": 87
+  "moonIllum": 87,
+  "wcs": {
+   "ra": 149.83518,
+   "dec": 41.11147,
+   "s": 0.000380556,
+   "rot": 3.07,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-10-03-uranus",
@@ -12517,7 +12956,8 @@ const ITEMS = [
   "con": "Canes Venatici",
   "ra": 208.766,
   "dec": 33.333,
-  "img": "img/2025-10-19-c-2025-a6-lemmon.jpg",
+  "lab": "img/2025-10-19-c-2025-a6-lemmon_labels.jpg",
+    "img": "img/2025-10-19-c-2025-a6-lemmon.jpg",
   "th": "img/2025-10-19-c-2025-a6-lemmon_th.jpg",
   "tw": 640,
   "thh": 360,
@@ -12541,7 +12981,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 3
+  "moonIllum": 3,
+  "wcs": {
+   "ra": 208.86701,
+   "dec": 33.44009,
+   "s": 0.00046,
+   "rot": 88.48,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "2025-10-19-saturn",
@@ -12588,7 +13036,8 @@ const ITEMS = [
   "con": "Boötes",
   "ra": 213.166,
   "dec": 31.098,
-  "img": "img/2025-10-20-c-2025-a6-lemmon.jpg",
+  "lab": "img/2025-10-20-c-2025-a6-lemmon_labels.jpg",
+    "img": "img/2025-10-20-c-2025-a6-lemmon.jpg",
   "th": "img/2025-10-20-c-2025-a6-lemmon_th.jpg",
   "tw": 480,
   "thh": 640,
@@ -12612,7 +13061,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 1
+  "moonIllum": 1,
+  "wcs": {
+   "ra": 213.25226,
+   "dec": 32.35586,
+   "s": 0.0026264,
+   "rot": 359.63,
+   "mir": 1,
+   "w": 1250
+  }
  },
  {
   "id": "2025-10-25-c-2025-a6-lemmon",
@@ -12624,7 +13081,8 @@ const ITEMS = [
   "con": "Serpens",
   "ra": 231.69,
   "dec": 17.952,
-  "img": "img/2025-10-25-c-2025-a6-lemmon.jpg",
+  "lab": "img/2025-10-25-c-2025-a6-lemmon_labels.jpg",
+    "img": "img/2025-10-25-c-2025-a6-lemmon.jpg",
   "th": "img/2025-10-25-c-2025-a6-lemmon_th.jpg",
   "tw": 640,
   "thh": 360,
@@ -12648,7 +13106,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": true,
-  "moonIllum": 15
+  "moonIllum": 15,
+  "wcs": {
+   "ra": 231.8394,
+   "dec": 18.24078,
+   "s": 0.000543889,
+   "rot": 274.68,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-10-25-c-2025-r2-swan",
@@ -12660,7 +13126,8 @@ const ITEMS = [
   "con": "Aquila",
   "ra": 308.764,
   "dec": -7.188,
-  "img": "img/2025-10-25-c-2025-r2-swan.jpg",
+  "lab": "img/2025-10-25-c-2025-r2-swan_labels.jpg",
+    "img": "img/2025-10-25-c-2025-r2-swan.jpg",
   "th": "img/2025-10-25-c-2025-r2-swan_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -12677,7 +13144,15 @@ const ITEMS = [
   "tsApprox": false,
   "det": {},
   "fav": false,
-  "moonIllum": 15
+  "moonIllum": 15,
+  "wcs": {
+   "ra": 308.57211,
+   "dec": -7.20146,
+   "s": 0.000338333,
+   "rot": 3.86,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-10-25-jupiter",
@@ -12695,7 +13170,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/2025-10-25-jupiter_anim.gif",
+  "anim": "img/2025-10-25-jupiter_anim.webp",
   "file": "Jupiter_pipp_lapl6_ap30_conv_ps2.png",
   "ts": "2025-10-25T03:02",
   "site": [
@@ -12724,7 +13199,8 @@ const ITEMS = [
   "con": "Cygnus",
   "ra": 305.983,
   "dec": 38.523,
-  "img": "img/2025-10-25-m29.jpg",
+  "lab": "img/2025-10-25-m29_labels.jpg",
+    "img": "img/2025-10-25-m29.jpg",
   "th": "img/2025-10-25-m29_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -12741,7 +13217,15 @@ const ITEMS = [
   "tsApprox": false,
   "det": {},
   "fav": false,
-  "moonIllum": 15
+  "moonIllum": 15,
+  "wcs": {
+   "ra": 305.99317,
+   "dec": 38.5044,
+   "s": 0.000501111,
+   "rot": 274.74,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2025-10-25-venus",
@@ -12789,7 +13273,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/2025-11-06-saturn_anim.gif",
+  "anim": "img/2025-11-06-saturn_anim.webp",
   "file": "Saturn_lapl6_ap24_conv_WS2.png",
   "ts": "2025-11-06T20:58",
   "site": [
@@ -12874,7 +13358,8 @@ const ITEMS = [
    ]
   },
   "fav": true,
-  "moonIllum": 91
+  "moonIllum": 91,
+  "lab": "img/2025-11-07-moon_labels.jpg"
  },
  {
   "id": "2025-11-15-ngc-891",
@@ -12886,7 +13371,8 @@ const ITEMS = [
   "con": "Andromeda",
   "ra": 35.638,
   "dec": 42.349,
-  "img": "img/2025-11-15-ngc-891.jpg",
+  "lab": "img/2025-11-15-ngc-891_labels.jpg",
+    "img": "img/2025-11-15-ngc-891.jpg",
   "th": "img/2025-11-15-ngc-891_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -12910,7 +13396,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 17
+  "moonIllum": 17,
+  "wcs": {
+   "ra": 35.63853,
+   "dec": 42.34701,
+   "s": 0.000416667,
+   "rot": 92.36,
+   "mir": 1,
+   "w": 1200
+  }
  },
  {
   "id": "2025-11-15-saturn",
@@ -13124,7 +13618,7 @@ const ITEMS = [
   "thh": 320,
   "w": 480,
   "h": 480,
-  "anim": "img/2025-12-24-saturn_anim.gif",
+  "anim": "img/2025-12-24-saturn_anim.webp",
   "file": "2025-12-24-1908_9-Saturn_pipp_lapl6_ap24_conv_WS.png",
   "ts": "2025-12-24T19:08",
   "site": [
@@ -13506,7 +14000,8 @@ const ITEMS = [
   "con": "Perseus",
   "ra": 35.125,
   "dec": 57.133,
-  "img": "img/2026-02-28-caldwell-14-double-cluster.jpg",
+  "lab": "img/2026-02-28-caldwell-14-double-cluster_labels.jpg",
+    "img": "img/2026-02-28-caldwell-14-double-cluster.jpg",
   "th": "img/2026-02-28-caldwell-14-double-cluster_th.jpg",
   "tw": 640,
   "thh": 427,
@@ -13530,7 +14025,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": true,
-  "moonIllum": 91
+  "moonIllum": 91,
+  "wcs": {
+   "ra": 35.03169,
+   "dec": 57.15923,
+   "s": 0.00217722,
+   "rot": 271.96,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2026-03-01-jupiter",
@@ -13577,7 +14080,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 130.1,
   "dec": 19.667,
-  "img": "img/2026-03-03-m44.jpg",
+  "lab": "img/2026-03-03-m44_labels.jpg",
+    "img": "img/2026-03-03-m44.jpg",
   "th": "img/2026-03-03-m44_th.jpg",
   "tw": 640,
   "thh": 427,
@@ -13601,7 +14105,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 100
+  "moonIllum": 100,
+  "wcs": {
+   "ra": 130.08761,
+   "dec": 19.7062,
+   "s": 0.002115,
+   "rot": 90.72,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2026-03-04-jupiter",
@@ -13619,7 +14131,7 @@ const ITEMS = [
   "thh": 320,
   "w": 448,
   "h": 448,
-  "anim": "img/2026-03-04-jupiter_anim.gif",
+  "anim": "img/2026-03-04-jupiter_anim.webp",
   "file": "animated_w448h448c255.gif",
   "ts": "2026-03-04T19:35",
   "site": [
@@ -13779,7 +14291,8 @@ const ITEMS = [
   "con": "Perseus",
   "ra": 40.525,
   "dec": 42.767,
-  "img": "img/2026-03-11-m34.jpg",
+  "lab": "img/2026-03-11-m34_labels.jpg",
+    "img": "img/2026-03-11-m34.jpg",
   "th": "img/2026-03-11-m34_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -13804,7 +14317,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 46
+  "moonIllum": 46,
+  "wcs": {
+   "ra": 40.51524,
+   "dec": 42.77466,
+   "s": 0.000817222,
+   "rot": 89.77,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2026-03-12-m81-m82",
@@ -13816,7 +14337,8 @@ const ITEMS = [
   "con": "Ursa Major",
   "ra": 148.958,
   "dec": 69.367,
-  "img": "img/2026-03-12-m81-m82.jpg",
+  "lab": "img/2026-03-12-m81-m82_labels.jpg",
+    "img": "img/2026-03-12-m81-m82.jpg",
   "th": "img/2026-03-12-m81-m82_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -13841,7 +14363,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": true,
-  "moonIllum": 37
+  "moonIllum": 37,
+  "wcs": {
+   "ra": 149.13166,
+   "dec": 69.28302,
+   "s": 0.000817222,
+   "rot": 356.85,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2026-03-17-jupiter",
@@ -13921,7 +14451,8 @@ const ITEMS = [
   "con": "Ursa Major",
   "ra": 148.967,
   "dec": 69.68,
-  "img": "img/2026-03-21-m82.jpg",
+  "lab": "img/2026-03-21-m82_labels.jpg",
+    "img": "img/2026-03-21-m82.jpg",
   "th": "img/2026-03-21-m82_th.jpg",
   "tw": 640,
   "thh": 480,
@@ -13946,7 +14477,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 10
+  "moonIllum": 10,
+  "wcs": {
+   "ra": 148.95869,
+   "dec": 69.67831,
+   "s": 0.000161667,
+   "rot": 359.95,
+   "mir": 1,
+   "w": 1800
+  }
  },
  {
   "id": "2026-03-21-moon",
@@ -13958,7 +14497,8 @@ const ITEMS = [
   "con": "Aries",
   "ra": 31.537,
   "dec": 16.959,
-  "img": "img/2026-03-21-moon.jpg",
+  "lab": "img/2026-03-21-moon_labels.jpg",
+    "img": "img/2026-03-21-moon.jpg",
   "th": "img/2026-03-21-moon_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -14045,7 +14585,8 @@ const ITEMS = [
   "con": "Aries",
   "ra": 31.537,
   "dec": 16.959,
-  "img": "img/x-2026-03-21-moon-9.jpg",
+  "lab": "img/x-2026-03-21-moon-9_labels.jpg",
+    "img": "img/x-2026-03-21-moon-9.jpg",
   "th": "img/x-2026-03-21-moon-9_th.jpg",
   "tw": 640,
   "thh": 445,
@@ -14073,7 +14614,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 151.825,
   "dec": 11.903,
-  "img": "img/2026-03-29-moon.jpg",
+  "lab": "img/2026-03-29-moon_labels.jpg",
+    "img": "img/2026-03-29-moon.jpg",
   "th": "img/2026-03-29-moon_th.jpg",
   "tw": 640,
   "thh": 360,
@@ -14107,7 +14649,8 @@ const ITEMS = [
   "con": "Canes Venatici",
   "ra": 205.546,
   "dec": 28.377,
-  "img": "img/2026-04-01-m3.jpg",
+  "lab": "img/2026-04-01-m3_labels.jpg",
+    "img": "img/2026-04-01-m3.jpg",
   "th": "img/2026-04-01-m3_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -14132,7 +14675,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 100
+  "moonIllum": 100,
+  "wcs": {
+   "ra": 205.54791,
+   "dec": 28.37532,
+   "s": 0.000230171,
+   "rot": 0.55,
+   "mir": 1,
+   "w": 1286
+  }
  },
  {
   "id": "2026-04-11-venus",
@@ -14208,7 +14759,8 @@ const ITEMS = [
   "con": "Hercules",
   "ra": 250.421,
   "dec": 36.46,
-  "img": "img/2026-04-15-m13.jpg",
+  "lab": "img/2026-04-15-m13_labels.jpg",
+    "img": "img/2026-04-15-m13.jpg",
   "th": "img/2026-04-15-m13_th.jpg",
   "tw": 640,
   "thh": 640,
@@ -14225,7 +14777,15 @@ const ITEMS = [
   "tsApprox": true,
   "det": {},
   "fav": false,
-  "moonIllum": 3
+  "moonIllum": 3,
+  "wcs": {
+   "ra": 250.41062,
+   "dec": 36.45953,
+   "s": 0.000757869,
+   "rot": 0.11,
+   "mir": 1,
+   "w": 1239
+  }
  },
  {
   "id": "2026-04-19-jupiter",
@@ -14361,7 +14921,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 135.902,
   "dec": 18.302,
-  "img": "img/2026-04-24-moon.jpg",
+  "lab": "img/2026-04-24-moon_labels.jpg",
+    "img": "img/2026-04-24-moon.jpg",
   "th": "img/2026-04-24-moon_th.jpg",
   "tw": 640,
   "thh": 432,
@@ -14428,7 +14989,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 135.902,
   "dec": 18.302,
-  "img": "img/x-2026-04-24-moon-0.jpg",
+  "lab": "img/x-2026-04-24-moon-0_labels.jpg",
+    "img": "img/x-2026-04-24-moon-0.jpg",
   "th": "img/x-2026-04-24-moon-0_th.jpg",
   "tw": 640,
   "thh": 425,
@@ -14456,7 +15018,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 135.902,
   "dec": 18.302,
-  "img": "img/x-2026-04-24-moon-1.jpg",
+  "lab": "img/x-2026-04-24-moon-1_labels.jpg",
+    "img": "img/x-2026-04-24-moon-1.jpg",
   "th": "img/x-2026-04-24-moon-1_th.jpg",
   "tw": 640,
   "thh": 235,
@@ -14484,7 +15047,8 @@ const ITEMS = [
   "con": "Cancer",
   "ra": 135.902,
   "dec": 18.302,
-  "img": "img/x-2026-04-24-moon-2.jpg",
+  "lab": "img/x-2026-04-24-moon-2_labels.jpg",
+    "img": "img/x-2026-04-24-moon-2.jpg",
   "th": "img/x-2026-04-24-moon-2_th.jpg",
   "tw": 640,
   "thh": 360,
@@ -14512,7 +15076,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 160.947,
   "dec": 7.126,
-  "img": "img/2026-04-26-moon.jpg",
+  "lab": "img/2026-04-26-moon_labels.jpg",
+    "img": "img/2026-04-26-moon.jpg",
   "th": "img/2026-04-26-moon_th.jpg",
   "tw": 640,
   "thh": 481,
@@ -14541,7 +15106,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 160.947,
   "dec": 7.126,
-  "img": "img/x-2026-04-26-moon-10.jpg",
+  "lab": "img/x-2026-04-26-moon-10_labels.jpg",
+    "img": "img/x-2026-04-26-moon-10.jpg",
   "th": "img/x-2026-04-26-moon-10_th.jpg",
   "tw": 640,
   "thh": 387,
@@ -14569,7 +15135,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 160.947,
   "dec": 7.126,
-  "img": "img/x-2026-04-26-moon-11.jpg",
+  "lab": "img/x-2026-04-26-moon-11_labels.jpg",
+    "img": "img/x-2026-04-26-moon-11.jpg",
   "th": "img/x-2026-04-26-moon-11_th.jpg",
   "tw": 640,
   "thh": 356,
@@ -14597,7 +15164,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 160.947,
   "dec": 7.126,
-  "img": "img/x-2026-04-26-moon-12.jpg",
+  "lab": "img/x-2026-04-26-moon-12_labels.jpg",
+    "img": "img/x-2026-04-26-moon-12.jpg",
   "th": "img/x-2026-04-26-moon-12_th.jpg",
   "tw": 640,
   "thh": 326,
@@ -14625,7 +15193,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 160.947,
   "dec": 7.126,
-  "img": "img/x-2026-04-26-moon-13.jpg",
+  "lab": "img/x-2026-04-26-moon-13_labels.jpg",
+    "img": "img/x-2026-04-26-moon-13.jpg",
   "th": "img/x-2026-04-26-moon-13_th.jpg",
   "tw": 640,
   "thh": 318,
@@ -14653,7 +15222,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 160.947,
   "dec": 7.126,
-  "img": "img/x-2026-04-26-moon-14.jpg",
+  "lab": "img/x-2026-04-26-moon-14_labels.jpg",
+    "img": "img/x-2026-04-26-moon-14.jpg",
   "th": "img/x-2026-04-26-moon-14_th.jpg",
   "tw": 640,
   "thh": 514,
@@ -14745,7 +15315,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 186.55,
   "dec": 12.946,
-  "img": "img/2026-05-02-m86.jpg",
+  "lab": "img/2026-05-02-m86_labels.jpg",
+    "img": "img/2026-05-02-m86.jpg",
   "th": "img/2026-05-02-m86_th.jpg",
   "tw": 640,
   "thh": 448,
@@ -14769,7 +15340,15 @@ const ITEMS = [
    "mount": "ZWO AM5"
   },
   "fav": false,
-  "moonIllum": 99
+  "moonIllum": 99,
+  "wcs": {
+   "ra": 186.52752,
+   "dec": 12.93707,
+   "s": 0.002055,
+   "rot": 93.09,
+   "mir": 0,
+   "w": 1800
+  }
  },
  {
   "id": "2026-05-09-venus",
@@ -14840,7 +15419,8 @@ const ITEMS = [
   "con": "Gemini",
   "ra": 101.159,
   "dec": 26.361,
-  "img": "img/2026-05-19-moon.jpg",
+  "lab": "img/2026-05-19-moon_labels.jpg",
+    "img": "img/2026-05-19-moon.jpg",
   "th": "img/2026-05-19-moon_th.jpg",
   "tw": 640,
   "thh": 453,
@@ -14899,7 +15479,8 @@ const ITEMS = [
   "con": "Gemini",
   "ra": 101.159,
   "dec": 26.361,
-  "img": "img/x-2026-05-19-moon-3.jpg",
+  "lab": "img/x-2026-05-19-moon-3_labels.jpg",
+    "img": "img/x-2026-05-19-moon-3.jpg",
   "th": "img/x-2026-05-19-moon-3_th.jpg",
   "tw": 640,
   "thh": 446,
@@ -14927,7 +15508,8 @@ const ITEMS = [
   "con": "Gemini",
   "ra": 101.159,
   "dec": 26.361,
-  "img": "img/x-2026-05-19-moon-4.jpg",
+  "lab": "img/x-2026-05-19-moon-4_labels.jpg",
+    "img": "img/x-2026-05-19-moon-4.jpg",
   "th": "img/x-2026-05-19-moon-4_th.jpg",
   "tw": 640,
   "thh": 446,
@@ -14955,7 +15537,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 169.466,
   "dec": 2.311,
-  "img": "img/2026-05-24-moon.jpg",
+  "lab": "img/2026-05-24-moon_labels.jpg",
+    "img": "img/2026-05-24-moon.jpg",
   "th": "img/2026-05-24-moon_th.jpg",
   "tw": 640,
   "thh": 434,
@@ -14988,7 +15571,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 169.466,
   "dec": 2.311,
-  "img": "img/x-2026-05-24-moon-5.jpg",
+  "lab": "img/x-2026-05-24-moon-5_labels.jpg",
+    "img": "img/x-2026-05-24-moon-5.jpg",
   "th": "img/x-2026-05-24-moon-5_th.jpg",
   "tw": 640,
   "thh": 432,
@@ -15016,7 +15600,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 169.466,
   "dec": 2.311,
-  "img": "img/x-2026-05-24-moon-6.jpg",
+  "lab": "img/x-2026-05-24-moon-6_labels.jpg",
+    "img": "img/x-2026-05-24-moon-6.jpg",
   "th": "img/x-2026-05-24-moon-6_th.jpg",
   "tw": 640,
   "thh": 434,
@@ -15044,7 +15629,8 @@ const ITEMS = [
   "con": "Leo",
   "ra": 169.466,
   "dec": 2.311,
-  "img": "img/x-2026-05-24-moon-7.jpg",
+  "lab": "img/x-2026-05-24-moon-7_labels.jpg",
+    "img": "img/x-2026-05-24-moon-7.jpg",
   "th": "img/x-2026-05-24-moon-7_th.jpg",
   "tw": 640,
   "thh": 362,
@@ -15179,7 +15765,8 @@ const ITEMS = [
   "tsApprox": true,
   "det": {},
   "fav": false,
-  "moonIllum": 28
+  "moonIllum": 28,
+  "lab": "img/2026-06-19-moon_labels.jpg"
  },
  {
   "id": "2026-06-19-venus",
@@ -15221,7 +15808,8 @@ const ITEMS = [
   "con": "Virgo",
   "ra": 212.002,
   "dec": -18.712,
-  "img": "img/2026-06-24-moon.jpg",
+  "lab": "img/2026-06-24-moon_labels.jpg",
+    "img": "img/2026-06-24-moon.jpg",
   "th": "img/2026-06-24-moon_th.jpg",
   "tw": 640,
   "thh": 419,
@@ -15450,7 +16038,8 @@ const ITEMS = [
   "tsApprox": true,
   "det": {},
   "fav": false,
-  "moonIllum": 98
+  "moonIllum": 98,
+  "lab": "img/2026-09-27-moon_labels.jpg"
  },
  {
   "id": "2026-09-27-saturn",
@@ -15502,7 +16091,7 @@ const ITEMS = [
   "thh": 357,
   "w": 720,
   "h": 720,
-  "anim": "img/2026-09-29-saturn_anim.gif",
+  "anim": "img/2026-09-29-saturn_anim.webp",
   "file": "2026-09-29-2013_7-Saturn_lapl6_ap43_conv.png",
   "ts": "2026-09-29T20:13",
   "site": [
@@ -15657,7 +16246,8 @@ function stats(){
 }
 stats();
 function buildFilters(){
-  $('#yearChips').innerHTML=[...new Set(ITEMS.map(i=>i.year))].sort().map(y=>`<button class="chip" data-year="${y}" aria-pressed="false">${y}</button>`).join('');
+  $('#yearSel').innerHTML=`<option value="all">All years</option>`+[...new Set(ITEMS.map(i=>i.year))].sort().reverse().map(y=>`<option value="${y}">${y} (${ITEMS.filter(i=>i.year===y).length})</option>`).join('');
+  $('#yearSel').addEventListener('change',e=>{state.year=e.target.value;refresh();});
   const chipBg=id=>id==='planets'?`conic-gradient(${Object.values(PCOL).join(',')})`:SKYCOL[id];
   const chipShape=id=>id==='deep'?' dia':id==='comets'?' tri':'';
   $('#catChips').innerHTML=CATS.map(c=>`<button class="chip" data-cat="${c.id}" aria-pressed="false"><span class="dot${chipShape(c.id)}" style="background:${chipBg(c.id)}"></span>${c.label}</button>`).join('');
@@ -15680,6 +16270,7 @@ function refresh(){
 }
 
 /* ---------- gallery ---------- */
+const NEWEST=ITEMS.reduce((a,it)=>it.date>a?it.date:a,'');
 function renderGallery(v){
   const el=$('#galleryView');
   if(!v.length){el.innerHTML=`<p class="empty">No photos match these filters. Clear a filter to see more.</p>`;return;}
@@ -15693,22 +16284,32 @@ function renderGallery(v){
     return;
   }
   [...v].reverse().forEach(it=>{const k=it.date.slice(0,7);(groups.get(k)||groups.set(k,[]).get(k)).push(it);});
+  /* one section per year, newest first: each year starts on a new row under a sticky bar (year · nights · photos); photos flow without gaps inside the year */
+  const years=new Map(); for(const [k,list] of groups){const y=k.slice(0,4);(years.get(y)||years.set(y,[]).get(y)).push(...list);}
   let html='';
-  for(const [k,list] of groups){
-    const [y,m]=k.split('-');
+  for(const [y,list] of years){
     const nights=new Set(list.map(i=>i.date)).size;
-    const tg=new Map(); list.forEach(i=>{const t=i.target.replace(' (Double Cluster)','');if(!tg.has(t))tg.set(t,{it:i,n:0});tg.get(t).n++;});
-    const targets=[...tg].map(([t,o])=>`<span><i style="background:${colorOf(o.it)}"></i>${t}${o.n>1?' ×'+o.n:''}</span>`).join('');
-    html+=`<section class="month" aria-label="${MONTHS[+m-1]} ${y}"><div class="mhead"><h2>${MONTHS[+m-1]}<i>${y}</i></h2><span class="mstat">${nights} night${nights>1?'s':''} · ${list.length} photo${list.length>1?'s':''}</span><div class="mtargets">${targets}</div></div>
-    <div class="grid">${list.map(card).join('')}</div></section>`;
+    html+=`<section class="month flow" aria-label="${y}"><div class="mhead"><h2>${y}</h2><span class="mstat">${nights} night${nights>1?'s':''} · ${list.length} photo${list.length>1?'s':''}</span></div><div class="grid">${list.map(it=>card(it)).join('')}</div></section>`;
   }
   el.innerHTML=html;
+  packFlow();
 }
+/* no gaps, strict date order: a wide photo that would only find one free column at the end of a row is shown as a square tile there */
+function packFlow(){
+  for(const g of document.querySelectorAll('#galleryView .flow .grid')){
+  const cols=getComputedStyle(g).gridTemplateColumns.split(' ').filter(Boolean).length||1; let c=0;
+  for(const el of g.children){ const wide=el.classList.contains('wide'); el.classList.remove('fit1');
+    let span=wide?2:1; if(span>cols) span=cols;
+    if(wide&&cols-c===1){ el.classList.add('fit1'); span=1; }
+    c=(c+span)%cols; }
+  }
+}
+addEventListener('resize',()=>{clearTimeout(packFlow.t);packFlow.t=setTimeout(packFlow,120);});
 function noUp(im){ if(im.naturalWidth<im.parentElement.clientWidth||im.naturalHeight<im.parentElement.clientHeight) im.classList.add('native'); }
-function card(it){
+function card(it,lab){
   const wide=it.w/it.h>=1.45&&Math.max(it.w,it.h)>=1200;
-  return `<button class="card${wide?' wide':''}" data-i="${it.i}" aria-label="${it.t}, ${fmtDate(it.date)}">
-    <div class="plate"><img loading="lazy" src="${wide?it.img:it.th}" data-th="${wide?it.img:it.th}" alt="${it.t}" onload="this.classList.add('ld')" onerror="this.classList.add('ld')">${it.anim?'<span class="badge">Animated</span>':''}${it.ex&&it.ex.length?`<span class="badge more">+${it.ex.length}</span>`:''}
+  return `<button class="card${wide?' wide':''}${lab?' mfirst':''}" data-i="${it.i}" aria-label="${it.t}, ${fmtDate(it.date)}">
+    <div class="plate">${lab||''}<img loading="lazy" src="${wide?it.img:it.th}" data-th="${wide?it.img:it.th}" alt="${it.t}" onload="this.classList.add('ld')" onerror="this.classList.add('ld')">${it.anim?'<span class="badge">Animated</span>':''}${it.ex&&it.ex.length?`<span class="badge more">+${it.ex.length}</span>`:''}${it.date===NEWEST?'<span class="badge new">Newest</span>':''}
     <div class="meta"><b>${it.t}</b><span><i class="dot" style="background:${colorOf(it)}"></i>${fmtDate(it.date)}${it.con?' · '+it.con:''}</span></div></div></button>`;
 }
 $('#galleryView').addEventListener('click',e=>{const c=e.target.closest('.card');if(c)openLB(+c.dataset.i);});
@@ -15726,7 +16327,7 @@ function openLB(i,keepMode){
   if(cur!==i){cmpI=-1;zoom=false;exI=-1;}
   cur=i; const it=ITEMS[i]; if(!keepMode) mode='still';
   const md=exI>=0&&it.ex&&it.ex[exI]?it.ex[exI]:it;
-  const img=$('#lbImg'), src=mode==='anim'&&md.anim?md.anim:md.img;
+  const img=$('#lbImg'), src=mode==='anim'&&md.anim?md.anim:mode==='lab'&&md.lab?md.lab:md.img;
   $('#lbSpin').hidden=false; let pending=1+(cmpI>=0?1:0); const fin=()=>{ if(--pending<=0) $('#lbSpin').hidden=true; };
   loadInto(img,src,fin); img.alt=it.t;
   const two=cmpI>=0; $('#lbFig2').hidden=!two; $('#lbPair').classList.toggle('cmp',two); $('#lbPair').classList.toggle('zoom',zoom&&!two);
@@ -15734,28 +16335,32 @@ function openLB(i,keepMode){
   if(two){ const c=ITEMS[cmpI]; loadInto($('#lbImg2'),c.img,fin); $('#lbImg2').alt=c.t; $('#lbCap2').textContent=fmtDate(c.date); }
   $('#lbKind').innerHTML=`<i style="background:${colorOf(it)}"></i>${it.kind}`;
   $('#lbTitle').textContent=it.t;
-  $('#lbModes').innerHTML=md.anim?`<button class="btn" data-m="still" aria-pressed="${mode==='still'}">Still</button><button class="btn" data-m="anim" aria-pressed="${mode==='anim'}">Animation</button>`:'';
+  $('#lbModes').innerHTML=(md.anim||md.lab)?`<button class="btn" data-m="still" aria-pressed="${mode==='still'}">Photo</button>${md.anim?`<button class="btn" data-m="anim" aria-pressed="${mode==='anim'}">Animation</button>`:''}${md.lab?`<button class="btn" data-m="lab" aria-pressed="${mode==='lab'}" title="Features named by Skyshot">Labels</button>`:''}`:'';
   const same=ITEMS.filter(x=>x.target===it.target&&x.i!==it.i);
-  $('#lbTools').innerHTML=(same.length?`<select class="btn sel2" id="lbCmp" aria-label="Compare with another photo of ${it.target}"><option value="-1">Compare with…</option>${same.map(x=>`<option value="${x.i}"${x.i===cmpI?' selected':''}>${fmtDate(x.date)}${x.t!==it.t?' · '+x.t:''}</option>`).join('')}</select>`:'');
+  $('#lbTools').innerHTML=''; $('#lbTools').hidden=true;   /* "Compare with…" removed */
   let altTxt=''; if(it.ra!=null&&it.ts){ useSite(it); const [al,az]=altAz(it.ra,it.dec,lstDeg(it.ts)); altTxt=`${al.toFixed(0)}° · ${azName(az)} · from ${SITE.name}`; }
-  const rows=[['Date',fmtDate(it.date)+(it.ts?` · ${it.tsApprox?'~':''}${locT(it.ts)}`:'')],['Target',it.target],['Type',it.kind]];
+  const rows=[['Date',fmtDate(it.date)+(it.ts?` · ${it.tsApprox?'~':''}${locT(it.ts)}`:'')],['Target',it.target],['Type',it.kind]], tech=[];
   if(it.desc) rows.unshift(['Description',it.desc]);
   if(it.con) rows.push(['Constellation',it.con]);
-  if(it.ra!=null){rows.push(['RA',fmtRA(it.ra)],['Dec',fmtDec(it.dec)]); if(altTxt) rows.push(['Altitude',altTxt]);}
+  if(altTxt) rows.push(['Altitude',altTxt]);
+  if(it.ra!=null) tech.push(['RA',fmtRA(it.ra)],['Dec',fmtDec(it.dec)]);
   if(it.moonIllum!=null&&it.cat!=='moon'&&it.cat!=='sun') rows.push(['Moon',`${it.moonIllum}% lit`]);
   const d=it.det||{};
-  if(d.camera) rows.push(['Camera',d.camera]);
-  if(d.focal) rows.push(['Focal length',`${d.focal} mm`]);
-  if(d.subs) rows.push(['Subframes',d.subs]);
-  if(d.integ) rows.push(['Integration',`${Math.floor(d.integ/3600)} h ${String(Math.round(d.integ%3600/60)).padStart(2,'0')} min`]);
-  if(d.gain) rows.push(['Gain',d.gain]);
-  if(d.temp!=null) rows.push(['Sensor temp',`${d.temp} °C`]);
-  if(d.mount) rows.push(['Mount',d.mount]);
-  if(d.proc) rows.push(['Processing',d.proc.join(' → ')+'<small> (from file name)</small>']);
-  rows.push(['Original',`${md.w} × ${md.h} px`],['File',md.file]);
+  if(d.camera) tech.push(['Camera',d.camera]);
+  if(d.focal) tech.push(['Focal length',`${d.focal} mm`]);
+  if(d.subs) tech.push(['Subframes',d.subs]);
+  if(d.integ) tech.push(['Integration',`${Math.floor(d.integ/3600)} h ${String(Math.round(d.integ%3600/60)).padStart(2,'0')} min`]);
+  if(d.gain) tech.push(['Gain',d.gain]);
+  if(d.temp!=null) tech.push(['Sensor temp',`${d.temp} °C`]);
+  if(d.mount) tech.push(['Mount',d.mount]);
+  if(d.proc) tech.push(['Processing',d.proc.join(' → ')+'<small> (from file name)</small>']);
+  tech.push(['Original',`${md.w} × ${md.h} px`],['File',md.file]);
+  if(md.lab) tech.push(['Labels','Identified with <a href="https://skyshot.app" target="_blank" rel="noopener">Skyshot</a>']);
+  if(it.wcs) tech.push(['Plate solve',`Skyshot · ${(it.wcs.s*it.wcs.w).toFixed(2)}° wide · rotation ${it.wcs.rot.toFixed(1)}°${it.wcs.mir?' · mirrored':''}`]);
   const exl=it.ex||[]; $('#lbEx').hidden=$('#lbExLab').hidden=!exl.length;
-  if(exl.length){ $('#lbExLab').textContent=`${exl.length+1} photos from this night`; $('#lbEx').innerHTML=[it,...exl].map((m,k)=>`<button type="button" data-x="${k-1}" aria-pressed="${k-1===exI}" aria-label="Photo ${k+1} of ${exl.length+1}"><img src="${m.th}" alt="" loading="lazy">${m.anim?'<i>GIF</i>':''}</button>`).join(''); }
+  if(exl.length){ $('#lbExLab').textContent=`${exl.length+1} photos from this night`; $('#lbEx').innerHTML=[it,...exl].map((m,k)=>`<button type="button" data-x="${k-1}" aria-pressed="${k-1===exI}" aria-label="Photo ${k+1} of ${exl.length+1}"><img src="${m.th}" alt="" loading="lazy">${m.anim?'<i>Anim</i>':''}</button>`).join(''); }
   $('#lbMeta').innerHTML=rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
+  $('#lbTechDl').innerHTML=tech.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join(''); $('#lbTech').hidden=!tech.length;
   $('#lbSky').hidden=it.ra==null;
   drawMini(it);
   const lb=$('#lb'); if(lb.hidden){lb.hidden=false;document.body.style.overflow='hidden';$('#lbClose').focus();}
@@ -15787,7 +16392,8 @@ function stepLB(d){const v=visible();if(!v.length)return;let k=v.findIndex(x=>x.
 $('#lbClose').onclick=closeLB; $('#lbPrev').onclick=()=>stepLB(-1); $('#lbNext').onclick=()=>stepLB(1);
 $('#lbModes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(b){mode=b.dataset.m;openLB(cur,true);}});
 $('#lbSky').onclick=()=>{const i=cur;closeLB();location.hash='sky';setView('sky');requestAnimationFrame(()=>requestAnimationFrame(()=>selectItem(i,HOME.scale*1.1)));};
-$('#lb').addEventListener('click',e=>{if(e.target.id==='lb'||e.target.classList.contains('stage'))closeLB();});
+let lbDownBg=false; $('#lb').addEventListener('pointerdown',e=>{lbDownBg=e.target.id==='lb'||e.target.classList.contains('stage');});
+$('#lb').addEventListener('click',e=>{if(lbDownBg&&(e.target.id==='lb'||e.target.classList.contains('stage')))closeLB();});   /* a press that started on the panel (e.g. a drag) never closes the viewer */
 document.addEventListener('keydown',e=>{if($('#lb').hidden)return;if(e.key==='Escape')closeLB();if(e.key==='ArrowLeft')stepLB(-1);if(e.key==='ArrowRight')stepLB(1);const it=ITEMS[cur];if(it&&it.ex&&(e.key==='ArrowDown'||e.key==='ArrowUp')){e.preventDefault();const n=it.ex.length+1;exI=((exI+1+(e.key==='ArrowDown'?1:-1)+n)%n)-1;mode='still';openLB(cur,true);}});
 let tx=null;$('#lb').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
 $('#lb').addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>60)stepLB(dx<0?1:-1);tx=null;});
@@ -15974,6 +16580,7 @@ function drawSky(){
   const labelled=new Set();
   for(const it of v){const p=proj(it.ra,it.dec); if(!p) continue; markers.push({it,x:p[0],y:p[1]});}
   const latest=new Map(); if(state.tl!=null) for(const m of markers){const p=latest.get(m.it.target); if(!p||m.it.date>p.it.date) latest.set(m.it.target,m);}
+  if(sel&&sel.wcs) drawSelPhoto(sel);   /* plate-solved photo: drawn under the markers at its true footprint */
   for(const m of markers){const hl=m.it.i===view.hl; const isNow=state.tl!=null&&latest.get(m.it.target)===m; const r=hl?8:isNow?7:5.2;
     if(state.tl!=null&&!isNow) ctx.globalAlpha=.45;
     shape(m.it.cat,m.x,m.y,r+2.2,'rgba(5,7,15,.85)'); shape(m.it.cat,m.x,m.y,r,colorOf(m.it));
@@ -15983,10 +16590,13 @@ function drawSky(){
   { const pm=view.hl>=0&&markers.find(m=>m.it.i===view.hl), pu=$('#pulse');
     if(pm){ pu.hidden=false; pu.style.transform=`translate(${pm.x}px,${pm.y}px)`; pu.style.setProperty('--pc',colorOf(pm.it)); } else pu.hidden=true; }
   ctx.font='600 12px Geist,sans-serif';ctx.textAlign='left';
-  const lab=state.tl!=null?[...latest.values()]:markers;
+  const lab=(state.tl!=null?[...latest.values()]:markers).slice().sort((a,b)=>(b.it.i===view.hl)-(a.it.i===view.hl));
+  const placed=[]; /* skip a label that would overlap one already drawn (selected photo's label always wins, it is drawn first) */
   for(const m of lab){ const key=m.it.target; if(labelled.has(key)) continue;
-    labelled.add(key); const txt=key.replace(' (Double Cluster)','');
-    ctx.fillStyle='rgba(5,7,15,.7)';const w=ctx.measureText(txt).width;ctx.fillRect(m.x+9,m.y-17,w+8,16);
+    const txt=key.replace(' (Double Cluster)',''); const w=ctx.measureText(txt).width, r=[m.x+9,m.y-17,m.x+17+w,m.y-1];
+    if(placed.some(q=>r[0]<q[2]+4&&r[2]>q[0]-4&&r[1]<q[3]+2&&r[3]>q[1]-2)) continue;
+    placed.push(r); labelled.add(key);
+    ctx.fillStyle='rgba(5,7,15,.7)';ctx.fillRect(m.x+9,m.y-17,w+8,16);
     ctx.fillStyle=colorOf(m.it);ctx.fillText(txt,m.x+13,m.y-5);}
   $('#skyread').innerHTML=hz?`<span class="selrow"><button class="selth" data-i="${sel.i}" title="Enlarge photo" aria-label="Enlarge ${sel.t}"><img src="${sel.th}" alt=""></button><span><b>${sel.t}</b> · ${fmtDate(sel.date)} ${hz.t.approx?'~':''}${locT(hz.t.iso)} · from ${SITE.name}<br>Altitude ${hz.alt.toFixed(0)}° · azimuth ${hz.az.toFixed(0)}° (${azName(hz.az)})${hz.alt<0?' · below horizon':''}<br><button class="hzc" type="button">Clear selection</button> <button class="hzc hzs" type="button" data-id="${sel.id}">Share link</button></span></span>`:`Centre RA ${fmtRA(view.ra)} · Dec ${fmtDec(view.dec)} · ${Math.round(2*Math.atan(view.W/2/view.scale/2)*2/D2R)}° wide`;
   $('#hzClear').hidden=true;
@@ -16026,13 +16636,22 @@ function drawSelPhoto(sel){
   else if(sel.ang&&selBox) degPerImgPx=sel.ang/3600/selBox;
   else if(sel.cat==='moon'||sel.cat==='sun'||sel.target==='Moon & Mars') degPerImgPx=(2.9/2436*206.265/3600)*(sel.w/iw);
   else degPerImgPx=0.5/Math.max(iw,ih)*1.5;
+  let ux=Wv[0]/pxPerDeg, uy=Wv[1]/pxPerDeg, vx=-N[0]/pxPerDeg, vy=-N[1]/pxPerDeg; // image +x = west, +y = south (north up, east left)
+  let cxS=m.x, cyS=m.y;
+  /* plate-solved photos (Skyshot): true centre, scale, rotation and mirroring.
+     rot = position angle of the frame's top edge, N through E; mir = the photo is a mirror image of the sky */
+  const W_=sel.wcs; if(W_){ const pc=proj(W_.ra,W_.dec); if(pc){cxS=pc[0];cyS=pc[1];}
+    degPerImgPx=W_.s*(W_.w/iw);
+    const Nu=[N[0]/pxPerDeg,N[1]/pxPerDeg], Wu=[Wv[0]/pxPerDeg,Wv[1]/pxPerDeg], c=Math.cos(W_.rot*D2R), sn=Math.sin(W_.rot*D2R);
+    const T=[c*Nu[0]-sn*Wu[0], c*Nu[1]-sn*Wu[1]];                    // top of the frame
+    let R=[c*Wu[0]+sn*Nu[0], c*Wu[1]+sn*Nu[1]]; if(W_.mir) R=[-R[0],-R[1]]; // right edge direction
+    ux=R[0]; uy=R[1]; vx=-T[0]; vy=-T[1]; }
   let s=degPerImgPx*pxPerDeg;
   const objPx=(selBox||Math.max(iw,ih))*s, minObj=22;
-  const enlarge=objPx<minObj?minObj/objPx:1; s*=enlarge;
-  const ux=Wv[0]/pxPerDeg, uy=Wv[1]/pxPerDeg, vx=-N[0]/pxPerDeg, vy=-N[1]/pxPerDeg; // image +x = west, +y = south (north up, east left)
+  const enlarge=(W_?1:(objPx<minObj?minObj/objPx:1)); s*=enlarge;
   ctx.save();
   ctx.setTransform(1,0,0,1,0,0); const dpr=window.devicePixelRatio||1;
-  ctx.setTransform(dpr*ux*s,dpr*uy*s,dpr*vx*s,dpr*vy*s,dpr*m.x,dpr*m.y);
+  ctx.setTransform(dpr*ux*s,dpr*uy*s,dpr*vx*s,dpr*vy*s,dpr*cxS,dpr*cyS);
   ctx.globalCompositeOperation='screen'; ctx.globalAlpha=.95;
   ctx.drawImage(selImg,-iw/2,-ih/2,iw,ih);
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
@@ -16041,11 +16660,12 @@ function drawSelPhoto(sel){
   ctx.restore();
   // north tick so the orientation is readable
   ctx.save(); ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='600 10px Geist,sans-serif'; ctx.textAlign='center';
-  const nx=m.x-vx*s*ih/2, ny=m.y-vy*s*ih/2; ctx.beginPath(); ctx.moveTo(nx,ny); ctx.lineTo(nx-vx*12,ny-vy*12); ctx.stroke(); ctx.fillText('N',nx-vx*20,ny-vy*20+3);
+  { const Nx=N[0]/pxPerDeg, Ny=N[1]/pxPerDeg, r0=s*Math.max(iw,ih)/2*(W_?1.02:1)*(W_?1:0)+ (W_?0:s*ih/2);
+    const nx=cxS+Nx*r0, ny=cyS+Ny*r0; ctx.beginPath(); ctx.moveTo(nx,ny); ctx.lineTo(nx+Nx*12,ny+Ny*12); ctx.stroke(); ctx.fillText('N',nx+Nx*20,ny+Ny*20+3); }
   ctx.textAlign='left'; ctx.fillStyle='rgba(255,255,255,.7)';
-  if(enlarge>1.05){ const cx=m.x+(ux*iw/2+vx*ih/2)*s, cy=m.y+(uy*iw/2+vy*ih/2)*s; ctx.font='500 11px Geist,sans-serif'; ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillText(`shown ${enlarge<10?enlarge.toFixed(1):Math.round(enlarge).toLocaleString('en')}× larger — zoom in for true size`,Math.max(8,Math.min(cx,view.W-280)),cy+14); }
+  if(enlarge>1.05){ const cx=cxS+(ux*iw/2+vx*ih/2)*s, cy=cyS+(uy*iw/2+vy*ih/2)*s; ctx.font='500 11px Geist,sans-serif'; ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillText(`shown ${enlarge<10?enlarge.toFixed(1):Math.round(enlarge).toLocaleString('en')}× larger — zoom in for true size`,Math.max(8,Math.min(cx,view.W-280)),cy+14); }
   ctx.restore();
-  selRect={cx:m.x,cy:m.y,ux:ux*s,uy:uy*s,vx:vx*s,vy:vy*s,hw:iw/2,hh:ih/2,i:sel.i};
+  selRect={cx:cxS,cy:cyS,ux:ux*s,uy:uy*s,vx:vx*s,vy:vy*s,hw:iw/2,hh:ih/2,i:sel.i};
 }
 function inSelPhoto(x,y){ return false; if(!selRect) return false; const r=selRect, dx=x-r.cx, dy=y-r.cy, det=r.ux*r.vy-r.uy*r.vx; if(!det) return false;
   const ix=(dx*r.vy-dy*r.vx)/det, iy=(r.ux*dy-r.uy*dx)/det; return Math.abs(ix)<=r.hw&&Math.abs(iy)<=r.hh; }
@@ -16089,7 +16709,7 @@ box.addEventListener('pointermove',e=>{
     $('#tip').hidden=true; reqDraw(); return;}
   if(inSelPhoto(x,y)){ $('#tip').hidden=true; box.style.cursor='zoom-in'; return; }
   const h=hit(x,y); const tip=$('#tip');
-  if(h.length){const it=h[0].it; tip.innerHTML=`<img src="${it.th}" alt=""><div><b>${it.t}${h.length>1?` +${h.length-1}`:''}</b><span>${fmtDate(it.date)}${it.con?' · '+it.con:''}</span><span class="hint">Click to select · right-click to enlarge</span></div>`;
+  if(h.length){const it=h[0].it; tip.innerHTML=`<img src="${it.th}" alt="" onload="this.classList.add('ld')"><div><b>${it.t}${h.length>1?` +${h.length-1}`:''}</b><span>${fmtDate(it.date)}${it.con?' · '+it.con:''}</span><span class="hint">Click to select · right-click to enlarge</span></div>`;
     tip.hidden=false; tip.style.left=Math.min(x+14,view.W-290)+'px'; tip.style.top=Math.max(8,y-70)+'px'; box.style.cursor='pointer';}
   else {tip.hidden=true; box.style.cursor='';}
 });
@@ -16100,7 +16720,7 @@ function endPtr(e){
   if(drag&&!moved){ const h=hit(x,y,e.pointerType==='touch'?18:11);
     if(h.length===1){ const i=h[0].it.i; if(e.pointerType==='touch'&&view.hl===i&&FR) openLB(i); else selectItem(i); }
     else if(h.length>1){ const pk=$('#pick'); h.sort((a,b)=>a.it.date.localeCompare(b.it.date));
-      pk.dataset.mode='select'; pk.innerHTML=h.map(m=>`<button data-i="${m.it.i}"><img src="${m.it.th}" alt=""><div>${m.it.t}<span>${fmtDate(m.it.date)}</span></div></button>`).join('');
+      pk.dataset.mode='select'; pk.innerHTML=h.map(m=>`<button data-i="${m.it.i}"><img src="${m.it.th}" alt="" onload="this.classList.add('ld')"><div>${m.it.t}<span>${fmtDate(m.it.date)}</span></div></button>`).join('');
       pk.hidden=false; pk.style.left=Math.min(x+10,view.W-260)+'px'; pk.style.top=Math.min(Math.max(8,y-20),view.H-310)+'px'; $('#tip').hidden=true; } }
   if(drag&&moved&&!pinch&&samples.length>1){ const a=samples[0], b=samples[samples.length-1], now=performance.now(), dt=b.t-a.t;
     if(dt>8&&now-b.t<60) glide(sdeg(a.ra,b.ra)/dt, (b.dec-a.dec)/dt); }
@@ -16114,7 +16734,7 @@ box.addEventListener('contextmenu',e=>{ if(e.target.closest('.skyctl,.pick,#hzCl
   const rect=box.getBoundingClientRect(), x=e.clientX-rect.left, y=e.clientY-rect.top, h=hit(x,y,12);
   if(h.length===1) openLB(h[0].it.i);
   else if(h.length>1){ const pk=$('#pick'); h.sort((a,b)=>a.it.date.localeCompare(b.it.date)); pk.dataset.mode='open';
-    pk.innerHTML=h.map(m=>`<button data-i="${m.it.i}"><img src="${m.it.th}" alt=""><div>${m.it.t}<span>${fmtDate(m.it.date)}</span></div></button>`).join('');
+    pk.innerHTML=h.map(m=>`<button data-i="${m.it.i}"><img src="${m.it.th}" alt="" onload="this.classList.add('ld')"><div>${m.it.t}<span>${fmtDate(m.it.date)}</span></div></button>`).join('');
     pk.hidden=false; pk.style.left=Math.min(x+10,view.W-260)+'px'; pk.style.top=Math.min(Math.max(8,y-20),view.H-310)+'px'; $('#tip').hidden=true; } });
 function zoomTo(s){view.scale=Math.max(HOME.scale*0.6,Math.min(HOME.scale*40,s));drawSky();}
 box.addEventListener('wheel',e=>{e.preventDefault();zoomTo(view.scale*Math.exp(-e.deltaY*0.0015));},{passive:false});
@@ -16181,7 +16801,7 @@ function applyQS(qs){ const q=new URLSearchParams(qs);
   state.cats.clear(); (q.get('type')||'').split(',').forEach(c=>{if(CATS.some(x=>x.id===c))state.cats.add(c);});
   const t=q.get('target'); state.target=t&&ITEMS.some(i=>i.target===t)?t:'all';
   document.querySelectorAll('[data-group]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.group===state.group));
-  document.querySelectorAll('[data-year]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.year===state.year));
+  $('#yearSel').value=state.year;
   document.querySelectorAll('[data-cat]').forEach(x=>x.setAttribute('aria-pressed',state.cats.has(x.dataset.cat)));
   $('#targetSel').value=state.target; }
 // every selected object gets its own address: #sky/<photo id>
@@ -16195,7 +16815,7 @@ async function shareItem(it){ if(!it) return; const url=shareURL(it), title=`${i
 window.addEventListener('hashchange',route);
 function isDark(){const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;}
 function syncTheme(){$('#themeTog').setAttribute('aria-label',isDark()?'Switch to light theme':'Switch to dark theme');}
-try{const t=localStorage.getItem('alachsky-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+try{document.documentElement.dataset.theme=localStorage.getItem('alachsky-theme')||'dark';}catch(e){document.documentElement.dataset.theme='dark';}
 $('#themeTog').onclick=()=>{const t=isDark()?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('alachsky-theme',t);}catch(e){}syncTheme();};
 syncTheme();
 buildFilters(); route(); refresh(); route.ready=true;
@@ -16235,7 +16855,7 @@ buildFilters(); route(); refresh(); route.ready=true;
   addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.body.classList.contains('fopen')) set(false); });
   mq.addEventListener('change',()=>{ if(!mq.matches) set(false); });
   $('#fReset').onclick=()=>{ state.year='all'; state.cats.clear(); state.target='all'; $('#targetSel').value='all';
-    document.querySelectorAll('[data-year]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.year==='all'));
+    $('#yearSel').value='all';
     document.querySelectorAll('[data-cat]').forEach(x=>x.setAttribute('aria-pressed','false')); refresh(); };
   // swipe down on the sheet header to close
   let sy=null; $('#fpanel').addEventListener('touchstart',e=>{ if(e.target.closest('.fhead')) sy=e.touches[0].clientY; },{passive:true});
@@ -16287,4 +16907,102 @@ $('#snap').onclick=async()=>{
 
 </script>
 
+<script>
+/* viewer details panel: fold / unfold (remembered) */
+(()=>{const a=document.getElementById('lbAside'),b=document.getElementById('lbMin');if(!a||!b)return;
+const set=m=>{const r0=a.getBoundingClientRect(), wasMin=a.classList.contains('min');a.classList.toggle('min',m); a.__place&&a.__place();
+  if(wasMin!==m&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&a.offsetParent){const r1=a.getBoundingClientRect();
+    a.style.overflow='hidden';
+    a.animate([{height:r0.height+'px',transform:`translate(${r0.left-r1.left}px,${r0.top-r1.top}px)`},{height:r1.height+'px',transform:'none'}],{duration:320,easing:'cubic-bezier(.3,0,.2,1)'}).onfinish=()=>{a.style.overflow='';};
+    if(!m) for(const k of a.children){ if(k.classList.contains('lbctl')||k.tagName==='H3') continue; k.animate([{opacity:0,transform:'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:260,delay:80,easing:'ease-out',fill:'backwards'}); } }b.setAttribute('aria-expanded',!m);b.setAttribute('aria-label',m?'Show details':'Hide details');try{localStorage.setItem('alachsky-lbmin',m?'1':'0')}catch(e){}};
+let start=false;try{start=localStorage.getItem('alachsky-lbmin')==='1'}catch(e){} if(start)set(true);
+b.addEventListener('click',e=>{e.stopPropagation();set(!a.classList.contains('min'))});
+a.addEventListener('click',e=>{if(a._dragged)return;if(a.classList.contains('min')&&!e.target.closest('button,select,a'))set(false)});
+document.addEventListener('keydown',e=>{if(document.getElementById('lb').hidden||e.target.closest('input,select,textarea'))return;if(e.key==='i'||e.key==='I')set(!a.classList.contains('min'))});})();
+</script>
+<script>
+/* photo area = screen minus the open details panel (right side on desktop, bottom sheet on phones) */
+(()=>{const lb=document.getElementById('lb'),a=document.getElementById('lbAside');if(!lb||!a)return;
+function fit(){ if(lb.hidden) return; const open=!a.classList.contains('min'), r=a.getBoundingClientRect(), W=innerWidth, H=innerHeight, phone=W<=760;
+  const leftSide=r.left+r.width/2<W/2;   /* panel dragged to the left half: the photo uses the space to its right */
+  lb.style.setProperty('--lbR', open&&!phone&&!leftSide ? (W-r.left)+'px' : '0px');
+  lb.style.setProperty('--lbL', open&&!phone&&leftSide ? r.right+'px' : '0px');
+  lb.style.setProperty('--lbP', open&&phone ? Math.max(0,H-r.top-70)+'px' : '0px'); }
+new ResizeObserver(()=>{ if(!a.getAnimations().some(x=>x.playState==='running')) place(); fit(); }).observe(a); addEventListener('resize',()=>{clamp();fit();});
+/* drag the panel by its header (desktop); double-click the header to put it back; position is remembered */
+const head=e=>!e.target.closest('button,select,a,input,details,canvas,.row,dl,.exs');
+let pos=null; try{pos=JSON.parse(localStorage.getItem('alachsky-lbpos')||'null')}catch(e){}
+function place(){ if(innerWidth<=760){a.style.left=a.style.top='';a.style.right='';return;} if(!pos||!a.classList.contains('min')){a.style.left='';a.style.right=''; if(a.getAnimations().some(x=>x.playState==='running')) return;   /* mid fold/unfold the height is animated: keep the top set when the fold started */ a.style.top=Math.max(16,(innerHeight-a.offsetHeight)/2)+'px';return;}   /* docked: vertically centred on the right */   /* only the folded bar moves; the open panel stays docked top right */ a.style.right='auto'; a.style.left=pos.x+'px'; a.style.top=pos.y+'px'; }
+function clamp(){ if(!pos||innerWidth<=760||!a.classList.contains('min')) {place();return;} const r=a.getBoundingClientRect(); pos.x=Math.max(8,Math.min(innerWidth-r.width-8,pos.x)); pos.y=Math.max(8,Math.min(innerHeight-60,pos.y)); place(); }
+place();
+a.__place=()=>{clamp();fit();};
+new MutationObserver(()=>{clamp();fit();}).observe(a,{attributes:true,attributeFilter:['class']});
+let d=null;
+a.addEventListener('pointerdown',e=>{ if(innerWidth<=760||e.button!==0||!head(e)||!a.classList.contains('min')) return; const r=a.getBoundingClientRect(); d={dx:e.clientX-r.left,dy:e.clientY-r.top,moved:false,id:e.pointerId}; });
+addEventListener('pointermove',e=>{ if(!d||e.pointerId!==d.id) return; const r=a.getBoundingClientRect();
+  if(!d.moved){ if(Math.hypot(e.clientX-(r.left+d.dx),e.clientY-(r.top+d.dy))<4) return; d.moved=true; a.classList.add('dragging'); a.setPointerCapture?.(e.pointerId); }
+  pos={x:e.clientX-d.dx,y:e.clientY-d.dy}; clamp(); fit(); });
+addEventListener('pointerup',e=>{ if(!d) return; if(d.moved){ a.classList.remove('dragging'); try{localStorage.setItem('alachsky-lbpos',JSON.stringify(pos))}catch(_){} a._dragged=true; setTimeout(()=>a._dragged=false,0);} d=null; });
+a.addEventListener('dblclick',e=>{ if(!head(e)) return; pos=null; try{localStorage.removeItem('alachsky-lbpos')}catch(_){} place(); fit(); });
+new MutationObserver(fit).observe(a,{attributes:true,attributeFilter:['class']});
+new MutationObserver(fit).observe(lb,{attributes:true,attributeFilter:['hidden']});})();
+</script>
+<script>
+/* magnifier over the viewer photo: original size (scroll / drag to look around), click again to fit */
+(()=>{const lb=document.getElementById('lb'),st=lb&&lb.querySelector('.stage'),img=document.getElementById('lbImg');if(!st||!img)return;
+const zi='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path class="zp" d="M11 8v6"/><path d="M8 11h6"/></svg>';
+const b=document.createElement('button');b.type='button';b.className='zbtn';b.id='lbZoom';b.innerHTML=zi;b.hidden=true;lb.appendChild(b);
+const zoomed=()=>st.classList.contains('zoomed');
+function place(){ if(lb.hidden||!img.naturalWidth){b.hidden=true;return;}
+  const z=zoomed(), big=img.naturalWidth>img.clientWidth+2||img.naturalHeight>img.clientHeight+2;
+  b.hidden=!(z||big); if(b.hidden) return;
+  const L=lb.getBoundingClientRect(), r=(z?st:img).getBoundingClientRect();
+  b.style.left=(Math.min(r.right,L.right)-L.left-48)+'px'; b.style.top=(Math.max(r.top,L.top)-L.top+10)+'px';
+  b.setAttribute('aria-label',z?'Fit to screen':'Original size'); b.querySelector('.zp').style.display=z?'none':''; }
+function set(on,fx=.5,fy=.5){ if(on===zoomed()) return; st.classList.toggle('zoomed',on); if(typeof hidePill==='function'){ hidePill(); if(on) setTimeout(()=>{ if(zoomed()) showPill('zoom',2600); },250); }
+  if(on){ st.scrollLeft=Math.max(0,img.offsetWidth*fx-st.clientWidth/2); st.scrollTop=Math.max(0,img.offsetHeight*fy-st.clientHeight/2); }
+  place(); }
+b.addEventListener('click',e=>{e.stopPropagation();set(!zoomed());syncCur();});
+/* fit: the photo shows a magnifier cursor and a click opens it at original size around that point.
+   original size: drag to move around, double-click / double-tap to go back to fit */
+const canZoom=()=>img.naturalWidth>img.clientWidth+2||img.naturalHeight>img.clientHeight+2;
+const hint=document.getElementById('lbZHint'); if(hint&&matchMedia('(pointer:coarse)').matches) hint.textContent='Tap to enlarge · double-tap to reset';
+const syncCur=()=>{ img.classList.toggle('zin',!zoomed()&&canZoom()); };
+/* one-time hint on the photo: shown for the first few photos that can be enlarged, then remembered */
+const touch=matchMedia('(pointer:coarse)').matches, pill=document.createElement('div'); pill.className='zpill'; pill.setAttribute('aria-live','polite'); lb.appendChild(pill);
+const T={fit:touch?'Tap to enlarge · double-tap to reset':'Click to enlarge · double-click to reset', zoom:touch?'Drag to explore · double-tap to reset':'Drag to explore · double-click to reset'};
+const seen=k=>{try{return +localStorage.getItem('alachsky-hint-'+k)||0}catch(e){return 9}}, mark=k=>{try{localStorage.setItem('alachsky-hint-'+k,seen(k)+1)}catch(e){}};
+let pillT=0, shownFor=null;
+function pillPlace(){ if(!pill.classList.contains('on')) return; const L=lb.getBoundingClientRect(), r=(zoomed()?st:img).getBoundingClientRect();
+  pill.style.left=(r.left+r.width/2-L.left)+'px'; pill.style.top=(Math.min(r.bottom,L.bottom)-L.top-16)+'px'; }
+function showPill(k,ms){ if(seen(k)>=3) return; mark(k); pill.textContent=T[k]; clearTimeout(pillT); pill.classList.add('on'); pillPlace(); pillT=setTimeout(hidePill,ms); }
+function hidePill(){ clearTimeout(pillT); pill.classList.remove('on'); }
+img.addEventListener('load',()=>requestAnimationFrame(()=>{ if(lb.hidden||zoomed()||!canZoom()||shownFor===img.src) return; shownFor=img.src; setTimeout(()=>{ if(!lb.hidden&&!zoomed()) showPill('fit',3200); },350); }));
+new MutationObserver(()=>{ if(lb.hidden){ hidePill(); shownFor=null; } }).observe(lb,{attributes:true,attributeFilter:['hidden']});
+new ResizeObserver(pillPlace).observe(st); addEventListener('resize',pillPlace);
+let d=null, lastUp=0, lastX=0, lastY=0, zoomedAt=0;
+st.addEventListener('pointerdown',e=>{ if(e.button!==0) return;
+  if(zoomed()){ d={x:e.clientX,y:e.clientY,sl:st.scrollLeft,stp:st.scrollTop,moved:false,id:e.pointerId}; e.preventDefault(); }
+  else if(e.target===img&&canZoom()) d={x:e.clientX,y:e.clientY,moved:false,id:e.pointerId,fit:true}; });
+addEventListener('pointermove',e=>{ if(!d||e.pointerId!==d.id) return; const dx=e.clientX-d.x, dy=e.clientY-d.y;
+  if(!d.moved&&Math.hypot(dx,dy)<5) return; d.moved=true; if(d.fit) return;
+  if(!st.classList.contains('panning')){ st.classList.add('panning'); st.setPointerCapture?.(e.pointerId); }
+  st.scrollLeft=d.sl-dx; st.scrollTop=d.stp-dy; });
+addEventListener('pointerup',e=>{ if(!d||e.pointerId!==d.id) return; const t=d; d=null; st.classList.remove('panning'); if(t.moved) return;
+  const now=performance.now(), dbl=now-lastUp<320&&Math.hypot(e.clientX-lastX,e.clientY-lastY)<30;
+  lastUp=now; lastX=e.clientX; lastY=e.clientY;
+  if(t.fit){ const r=img.getBoundingClientRect(); zoomedAt=now; lastUp=0; set(true,(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height); syncCur(); return; }
+  if(zoomed()&&dbl&&now-zoomedAt>400){ lastUp=0; set(false); syncCur(); } });
+img.addEventListener('click',e=>e.stopPropagation());
+img.addEventListener('dragstart',e=>e.preventDefault());
+img.addEventListener('load',syncCur); new ResizeObserver(syncCur).observe(img);
+/* any new photo, a resize or closing the viewer goes back to fit */
+new MutationObserver(()=>{ st.classList.remove('zoomed'); b.hidden=true; syncCur(); }).observe(img,{attributes:true,attributeFilter:['src']});
+new MutationObserver(()=>{ if(lb.hidden) st.classList.remove('zoomed'); place(); }).observe(lb,{attributes:true,attributeFilter:['hidden']});
+img.addEventListener('load',()=>requestAnimationFrame(place));
+new ResizeObserver(place).observe(img); new ResizeObserver(place).observe(st);
+st.addEventListener('transitionend',place); addEventListener('resize',place);
+document.addEventListener('keydown',e=>{ if(lb.hidden||e.target.closest('input,select,textarea')) return; if(e.key==='z'||e.key==='Z'){ set(!zoomed()); syncCur(); } if(e.key==='Escape'&&zoomed()){ e.stopImmediatePropagation(); set(false); } },true);
+})();
+</script>
 </body></html>
