@@ -304,6 +304,13 @@ html body .sec .tabs:not(.seg){margin-bottom:8px}
 html body .place{padding:9px 2px}
 html body .note{margin-top:14px}
 @media (max-width:760px){html body .kpis .stat b{font-size:22px!important}}
+.goal .rp{display:flex;align-items:center;justify-content:center;gap:14px;padding-top:4px}
+.goal .rp-btn{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 10px;border:1px solid var(--line);border-radius:999px;background:var(--chip);color:var(--fg);font:600 12.5px/1 var(--body);cursor:pointer;transition:border-color .2s,background .2s}
+.goal .rp-btn svg{width:12px;height:12px;fill:rgb(var(--track));flex:none}
+.goal .rp-btn:hover{border-color:rgb(var(--track))}
+.goal .rp-btn[aria-pressed="true"]{background:rgb(var(--track));border-color:transparent;color:#121518}
+.goal .rp-btn[aria-pressed="true"] svg{fill:#121518}
+.goal .rp-date{font-size:13px;font-weight:600;color:rgb(var(--track));font-variant-numeric:tabular-nums}
 </style>
 
 <div class="app">
@@ -395,6 +402,7 @@ const VISITED = [{"name": "Stockholm", "cc": "SE", "lat": 59.3293, "lon": 18.068
 const activeCC = () => new Set(filtered().filter(w => w.cc).map(w => w.cc));
 
 // ---------- state ----------
+const RP = { on: false, d: '', pct: 0 }; // replay of the whole history, from the play button in the lap block
 const st = { year: null, type: 'All', sel: null, showAllPlaces: false, mode: 'map', tab: 'countries' };
 const CC = LAND.cc, ccName = c => CC[c] || c;
 const FLAGS = window.FLAGS_DATA; // from flags.js
@@ -416,13 +424,13 @@ function yearsLabel(set, short) {
   return f(ys[0]) + '–' + (short ? String(ys[ys.length - 1]).slice(2) : ys[ys.length - 1]);
 }
 function placeGroups() {
-  const key = st.year + '|' + st.type;
+  const key = st.year + '|' + st.type + '|' + (RP.on ? RP.d : '');
   if (_pg && _pgKey === key) return _pg;
   const g = {};
   for (const w of filtered()) { if (!w.bb) continue; const k = placeKey(w); (g[k] = g[k] || { name: w.place, cc: w.cc, admin: w.admin, n: 0, km: 0, list: [] }); g[k].n++; g[k].km += w.km || 0; g[k].list.push(w); (g[k].years = g[k].years || new Set()).add(w.yr); }
   // runs without GPS whose location is known still count for their place
   for (const w of DATA.nogps) {
-    if (!w.cc || !(st.year == null || +w.d.slice(0, 4) === st.year)) continue;
+    if (!w.cc || !(RP.on ? w.d <= RP.d : (st.year == null || +w.d.slice(0, 4) === st.year))) continue;
     const k = w.place + '|' + w.cc;
     if (!g[k]) { if (w.lat == null) continue; g[k] = { name: w.place, cc: w.cc, admin: w.admin, n: 0, km: 0, list: [], fixed: [w.lat, w.lon] }; }
     g[k].n++; g[k].km += w.km || 0; g[k].nogps = (g[k].nogps || 0) + 1; (g[k].years = g[k].years || new Set()).add(+w.d.slice(0, 4));
@@ -447,7 +455,7 @@ const cv = document.getElementById('map'), ctx = cv.getContext('2d');
 let cw = 0, ch = 0, dpr = 1;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-const filtered = () => W.filter(w => (st.year == null || w.yr === st.year) && (st.type === 'All' || w.type === st.type));
+const filtered = () => W.filter(w => (RP.on ? w.d <= RP.d : (st.year == null || w.yr === st.year)) && (st.type === 'All' || w.type === st.type));
 
 // ---------- drawing ----------
 function resize() {
@@ -557,7 +565,8 @@ function drawGlobe() {
       for (let i = 0; i < r.length; i += 2) { const q = gProj(r[i+1] / 1e3, r[i] / 1e3); pts.push(q); if (q[2]) vis = true; }
       if (!vis) continue; pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath();
     }
-    ctx.fillStyle = `rgba(${tcc},.12)`; ctx.fill(); ctx.strokeStyle = `rgba(${tcc},.45)`; ctx.lineWidth = .9; ctx.stroke(); }
+    ctx.fillStyle = `rgba(${tcc},.12)`; ctx.fill(); ctx.strokeStyle = `rgba(${tcc},.45)`; ctx.lineWidth = .9; ctx.stroke();
+    if (RP.on) replayCountries(); }
   visitedCountryPath(r => { let vis = false; const pts = []; for (let i = 0; i < r.length; i += 2) { const q = gProj(r[i+1] / 1e3, r[i] / 1e3); pts.push(q); if (q[2]) vis = true; } if (vis) { pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); } });
   ctx.fillStyle = css('--visit'); ctx.fill(); ctx.setLineDash([3, 3]); ctx.strokeStyle = css('--visit-line'); ctx.lineWidth = .9; ctx.stroke(); ctx.setLineDash([]);
   ctx.restore(); ctx.save(); if (!MO) drawEquatorGlobe();   /* the progress line sits out the globe/map transition */
@@ -565,6 +574,7 @@ function drawGlobe() {
   if (!MO || MO.e < .5) { ctx.beginPath(); globeOutline(R); ctx.strokeStyle = css('--coast'); ctx.lineWidth = 1.2; ctx.globalAlpha = MO ? 1 - 2 * MO.e : 1; ctx.stroke(); ctx.globalAlpha = 1; }
   drawClusters(buildClusters(p => { const q = gProj(p.lon, p.lat); return q[2] ? q : null; }), false);
   drawVisited(v => { const q = gProj(v.lon, v.lat); return q[2] ? q : null; });
+  if (RP.on && !MO) drawReplay();
   if (!MO) drawMoon(true);
   document.getElementById('scale').hidden = true;   // centre coordinates mean nothing to visitors
 }
@@ -604,6 +614,7 @@ function drawClusters(cl, hollow) {
     const main = c.places[0].name, t = c.places.length === 1 ? `${main} · ${yearsLabel(c.places[0].years, true)}` : ccs.size === 1 && c.places[0].cc !== 'PL' ? ccName(c.places[0].cc) : `${main} +${c.places.length - 1}`;
     const w = ctx.measureText(t).width, lx = c.x + c.r + 6, ly = c.y;
     if (lx + w > cw - 4) continue;
+    if (RP.on && RP.flash.some(f => c.places.some(p => p.name === f.e.name && p.cc === f.e.cc))) continue;   // the replay names it
     const hit = boxes.some(b => lx < b[0] + b[2] && lx + w > b[0] && Math.abs(ly - b[1]) < 15)
       || cl.some(o => o !== c && o.x + o.r > lx && o.x - o.r < lx + w && Math.abs(o.y - ly) < o.r + 6);
     if (hit) continue;
@@ -653,10 +664,11 @@ function drawTrackLabels() {
 // ---------- visited without running: neutral country tint + hollow markers ----------
 let lastVisited = [];
 function visitedCountryPath(ringToPts) {
-  const run = activeCC(); ctx.beginPath();
+  const run = activeCC(); ctx.beginPath(); if (RP.on) return;
   for (const v of VISITED) { if (run.has(v.cc)) continue; for (const r of (LAND.hl[v.cc] || [])) ringToPts(r); }
 }
 function drawVisited(project) {
+  if (RP.on) { lastVisited = []; return; }
   const out = []; const fg = css('--fg'), bg = css('--bg');
   ctx.font = '500 12px Geist, system-ui, sans-serif'; ctx.textBaseline = 'middle';
   for (const v of VISITED) {
@@ -972,7 +984,7 @@ function fitList(list, trim = 0) {
 
 // ---------- interaction ----------
 const ptrs = new Map(); let moved = false, pinch0 = null, samples = [];
-cv.addEventListener('pointerdown', e => { stopMotion(); samples = []; cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); moved = false; cv.classList.add('drag'); if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a[0]-b[0], a[1]-b[1]), z: view.z, k: globe.k }; } });
+cv.addEventListener('pointerdown', e => { stopMotion(); RP.follow = false; samples = []; cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); moved = false; cv.classList.add('drag'); if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a[0]-b[0], a[1]-b[1]), z: view.z, k: globe.k }; } });
 cv.addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) return;
   const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
@@ -1037,6 +1049,7 @@ const placeKey = w => w.place + '|' + w.cc;
 const GP = { pct: 0, done: 0, start: 18.53 }; // around-the-world line starts at Gdynia's longitude, heading east
 // share of the lap drawn right now: grows from 0 when the page opens, then stays at the real value
 function gpShown() {
+  if (RP.on) return RP.pct;
   if (RM || !GP.t0) return GP.pct;
   const u = Math.max(0, Math.min(1, (performance.now() - GP.t0) / 3600));
   return GP.pct * (1 - (1 - u) ** 3);
@@ -1276,11 +1289,14 @@ function renderGoal() { // lifetime progress toward one lap of the equator, inde
       <path class="arc-fg" d="M8 38 Q150 -14 292 38" pathLength="100" stroke-dasharray="${GP.arcShown ? pct : 0} 100"/>
       <g class="arc-ticks"></g><circle class="arc-dot" r="4.5" cx="8" cy="38"/><g class="arc-runner" transform="translate(8 32)"><path class="halo"/><path class="body"/><circle class="head" r="2.3"/></g>
     </svg>
-    <div class="row"><span><strong>${fmt(done)} km</strong> run</span><span><strong>${fmt(left)} km</strong> to go</span></div>
+    <div class="row"><span><strong class="rp-run">${fmt(done)} km</strong> run</span><span><strong class="rp-left">${fmt(left)} km</strong> to go</span></div>
+    <div class="rp"><button class="rp-btn" type="button" aria-pressed="${RP.on}">${RP.on ? '<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" rx="1.5"/></svg>Stop' : '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.6v8.8L10.4 6z"/></svg>Replay since ' + all.map(w => w.d).sort()[0].slice(0, 4)}</button><span class="rp-date"></span></div>
 `;
+  document.querySelector('#goal .rp-btn').onclick = () => RP.on ? replayStop() : replayStart();
   GP.eta = eta ? eta.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '–'; GP.yearKm = yearKm;
   placeArc(pct);
   miniGlobeStart();
+  if (RP.on) replayGoal();
 }
 // small spinning globe next to "Around the Earth": the real coastlines, turning west to east like the Earth
 const MG = { rings: null, raf: 0, last: 0 };
@@ -1343,11 +1359,127 @@ function placeArc(pct) {
   svg.querySelector('.arc-ticks').innerHTML = [25, 50, 75].map(p => { const a = at(p - 0.5), b = at(p + 0.5), c = at(p); const nx = -(b.y - a.y), ny = b.x - a.x, n = Math.hypot(nx, ny) || 1; return `<line x1="${c.x - nx / n * 4}" y1="${c.y - ny / n * 4}" x2="${c.x + nx / n * 4}" y2="${c.y + ny / n * 4}"/>`; }).join('');
   const run = svg.querySelector('.arc-runner');
   const setTo = p => { const q = at(p); dot.setAttribute('cx', q.x); dot.setAttribute('cy', q.y); run.setAttribute('transform', `translate(${q.x.toFixed(1)} ${(q.y - 5).toFixed(1)})`); fg.setAttribute('stroke-dasharray', `${p} 100`); };
-  runnerStart();
+  GP.setArc = setTo; runnerStart();
   if (GP.arcShown || RM) { setTo(pct); GP.arcShown = true; return; }
   GP.arcShown = true; const t0 = performance.now() + 250;
   const step = now => { const u = Math.max(0, Math.min(1, (now - t0) / 1800)); setTo(pct * (1 - (1 - u) ** 3)); if (u < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
+}
+// ---------- replay: the whole history from the first run, on the lap bar and on the globe ----------
+// Time runs evenly from the first run to today (about 2 s a year). The globe turns towards the next new place
+// before it appears (dashed ring), each new place lands with a ring and its name, and a new country lights up
+// with a short pause. The lap line along the equator and the runner on the bar grow with the kilometres.
+const dayN = d => Date.parse(d + 'T00:00:00Z') / 864e5;
+function replayPrep() {
+  const all = W.concat(DATA.nogps).filter(w => w.d).map(w => ({ day: dayN(w.d), km: w.km || 0 })).sort((a, b) => a.day - b.day);
+  const days = [], cum = []; let s = 0; for (const w of all) { s += w.km; days.push(w.day); cum.push(s); }
+  // places with a position, as on the globe: median start of their GPS runs, or the fixed point of runs without GPS
+  const g = {}, med = a => { a.sort((x, y) => x - y); return a[a.length >> 1]; };
+  for (const w of W) { if (!w.bb || !w.cc) continue; const k = placeKey(w), p = (g[k] = g[k] || { name: w.place, cc: w.cc, d: w.d, la: [], lo: [], gps: true }); if (w.d < p.d) p.d = w.d; p.la.push(w.la0); p.lo.push(w.lo0); }
+  for (const w of DATA.nogps) { if (!w.cc) continue; const k = w.place + '|' + w.cc;
+    if (!g[k]) { if (w.lat == null) continue; g[k] = { name: w.place, cc: w.cc, d: w.d, la: [w.lat], lo: [w.lon] }; } else if (w.d < g[k].d) g[k].d = w.d; }
+  const seen = new Set(), E = Object.values(g).map(p => ({ name: p.name, cc: p.cc, day: dayN(p.d), lat: med(p.la), lon: med(p.lo) })).sort((a, b) => a.day - b.day);
+  for (const e of E) { e.newCC = !seen.has(e.cc); seen.add(e.cc); }
+  const d0 = days[0], d1 = Math.max(days[days.length - 1], dayN(new Date().toISOString().slice(0, 10)));
+  return { days, cum, E, d0, d1, dur: Math.max(15000, Math.min(40000, (d1 - d0) / 365 * 2100)) };
+}
+function kmAt(day) { const X = RP.x; let lo = 0, hi = X.days.length; while (lo < hi) { const m = (lo + hi) >> 1; if (X.days[m] <= day) lo = m + 1; else hi = m; } return lo ? X.cum[lo - 1] : 0; }
+function replayStart() {
+  RP.x = RP.x || replayPrep();
+  Object.assign(RP, { on: true, day: RP.x.d0, i: 0, hold: 0, follow: true, flash: [], ccFlash: [], last: 0, done: 0 });
+  RP.d = new Date(RP.x.d0 * 864e5).toISOString().slice(0, 10);
+  st.sel = null; renderInfo();
+  stopMotion();
+  if (st.mode !== 'globe') document.getElementById('globeBtn').onclick();
+  RP.wait = performance.now() + (MO ? 1400 : 300);   // let the map roll up into the globe first
+  const r = cv.getBoundingClientRect(); if (r.top < -r.height * .25 || r.bottom > innerHeight + r.height * .25) cv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  renderGoal();
+  cancelAnimationFrame(RP.raf); RP.raf = requestAnimationFrame(replayFrame);
+}
+function replayStop() { RP.on = false; cancelAnimationFrame(RP.raf); _pg = null; renderGoal(); req(); }
+function replayFrame(now) {
+  if (!RP.on) return;
+  RP.raf = requestAnimationFrame(replayFrame);
+  const X = RP.x, dt = RP.last ? Math.min(200, now - RP.last) : 16; RP.last = now;
+  if (now < RP.wait || MO) { if (!MO) draw(); return; }
+  if (RP.done) { if (now > RP.done) replayStop(); else draw(); return; }
+  if (RP.hold > 0) RP.hold -= dt; else RP.day = Math.min(X.d1, RP.day + dt * (X.d1 - X.d0) / X.dur);
+  RP.d = new Date(Math.floor(RP.day) * 864e5).toISOString().slice(0, 10);
+  while (RP.i < X.E.length && X.E[RP.i].day <= RP.day) {   // new places reached
+    const e = X.E[RP.i++]; RP.flash.push({ e, t: now }); if (RP.flash.length > 4) RP.flash.shift();
+    if (e.newCC) { RP.ccFlash.push({ cc: e.cc, t: now }); if (RP.i > 1) RP.hold = 700; }
+  }
+  RP.km = kmAt(RP.day); RP.pct = Math.min(100, RP.km / 40075 * 100);
+  // camera: rest on the latest new place, then turn towards the next one as it comes closer
+  const prev = X.E[Math.max(0, RP.i - 1)], next = X.E[RP.i];
+  let tl = prev.lon, tp = prev.lat; RP.next = null;
+  if (next) {
+    const u = Math.max(0, Math.min(1, (RP.day - prev.day) / Math.max(1, next.day - prev.day)));
+    const e = Math.max(0, Math.min(1, (u - .45) / .55)), k = e * e * (3 - 2 * e), dl = ((next.lon - prev.lon + 540) % 360) - 180;
+    tl = prev.lon + dl * k; tp = prev.lat + (next.lat - prev.lat) * k;
+    if (u > .35) RP.next = { e: next, a: Math.min(1, (u - .35) / .2) };
+  }
+  if (RP.follow && st.mode === 'globe') {
+    const f = 1 - Math.exp(-dt / 380), dl = ((tl - globe.lon + 540) % 360) - 180;
+    globe.lon += dl * f; globe.lat += (Math.max(-60, Math.min(60, tp * .85)) - globe.lat) * f; globe.k += (0.42 - globe.k) * f;
+  }
+  if (RP.day >= X.d1 && RP.hold <= 0) RP.done = now + 2600;   // hold the finished picture, then back to normal
+  replayGoal(); draw();
+}
+// lap block: percentage, bar with the runner, kilometres and the date, all following the replay
+function replayGoal() {
+  const g = document.getElementById('goal'); if (!g || !RP.x) return;
+  const km = RP.km || 0, pct = RP.pct || 0;
+  g.querySelector('.pct').textContent = fmt(pct, 1) + '%';
+  g.querySelector('.rp-run').textContent = fmt(km) + ' km'; g.querySelector('.rp-left').textContent = fmt(Math.max(0, 40075 - km)) + ' km';
+  if (GP.setArc) GP.setArc(pct);
+  const d = new Date(Math.floor(RP.day || RP.x.d0) * 864e5);
+  g.querySelector('.rp-date').textContent = d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+// new countries light up and fade back to the normal tint
+function replayCountries() {
+  const now = performance.now(), tc = css('--track');
+  RP.ccFlash = RP.ccFlash.filter(f => now - f.t < 2600);
+  for (const f of RP.ccFlash) {
+    const k = 1 - (now - f.t) / 2600; ctx.beginPath();
+    for (const r of (LAND.hl[f.cc] || [])) { let vis = false; const pts = []; for (let i = 0; i < r.length; i += 2) { const q = gProj(r[i+1] / 1e3, r[i] / 1e3); pts.push(q); if (q[2]) vis = true; } if (vis) { pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); } }
+    ctx.fillStyle = `rgba(${tc},${(.55 * k).toFixed(3)})`; ctx.fill(); ctx.strokeStyle = `rgba(${tc},${Math.min(1, .45 + k).toFixed(3)})`; ctx.lineWidth = 1 + 1.5 * k; ctx.stroke();
+  }
+}
+function drawReplay() {
+  const now = performance.now(), tc = css('--track'), fg = css('--fg'), bg = css('--bg'), muted = css('--muted');
+  const at = e => { const q = gProj(e.lon, e.lat); return q[2] ? q : null; };
+  const label = (x, y, t, sub, a) => {
+    ctx.globalAlpha = a; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    ctx.font = '700 13px Geist, system-ui, sans-serif'; const w = ctx.measureText(t).width; let lx = x + 16; if (lx + w > cw - 8) lx = x - 16 - w;
+    ctx.lineWidth = 4; ctx.strokeStyle = bg; ctx.strokeText(t, lx, y - (sub ? 7 : 0)); ctx.fillStyle = fg; ctx.fillText(t, lx, y - (sub ? 7 : 0));
+    if (sub) { ctx.font = '600 11px Geist, system-ui, sans-serif'; ctx.strokeText(sub, lx, y + 8); ctx.fillStyle = `rgb(${tc})`; ctx.fillText(sub, lx, y + 8); }
+    ctx.globalAlpha = 1;
+  };
+  // the next place: a dashed ring that turns slowly, waiting for the run
+  if (RP.next) { const q = at(RP.next.e); if (q) {
+    const a = RP.next.a, r = 13 + Math.sin(now / 260) * 1.5;
+    ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(now / 900); ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.setLineDash([4, 4]); ctx.lineWidth = 2; ctx.strokeStyle = `rgb(${tc})`; ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore(); ctx.globalAlpha = 1;
+    label(q[0], q[1], 'Next: ' + RP.next.e.name, null, a * .8);
+  } }
+  // places just reached: a ring opening out and the name, for a moment
+  RP.flash = RP.flash.filter(f => now - f.t < 2800);
+  for (const f of RP.flash) { const q = at(f.e); if (!q) continue;
+    const u = (now - f.t) / 2800, r1 = Math.min(1, u / .5);
+    ctx.beginPath(); ctx.arc(q[0], q[1], 6 + 30 * r1, 0, 7); ctx.lineWidth = 2.5 * (1 - r1) + .5; ctx.strokeStyle = `rgba(${tc},${(1 - r1).toFixed(3)})`; ctx.stroke();
+    ctx.beginPath(); ctx.arc(q[0], q[1], 5, 0, 7); ctx.fillStyle = `rgb(${tc})`; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = bg; ctx.stroke();
+    if (f === RP.flash[RP.flash.length - 1]) label(q[0], q[1], f.e.name, f.e.newCC ? 'New country · ' + ccName(f.e.cc) : ccName(f.e.cc), Math.min(1, (1 - u) * 3));
+  }
+  // date and running totals across the top of the globe
+  const d = new Date(Math.floor(RP.day) * 864e5), yr = d.getUTCFullYear(), mo = d.toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' });
+  const y = Math.max(cw < 600 ? 100 : 86, ch / 2 - gR() - 34), cx = cw / 2;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
+  ctx.font = '700 40px Geist, system-ui, sans-serif'; ctx.lineWidth = 6; ctx.strokeStyle = bg; ctx.strokeText(yr, cx, y); ctx.fillStyle = fg; ctx.fillText(yr, cx, y);
+  const sub = `${mo} · ${fmt(RP.km || 0)} km · ${placeGroups().length} places · ${activeCC().size} countries`;
+  ctx.font = '600 12px Geist, system-ui, sans-serif'; ctx.lineWidth = 4; ctx.strokeText(sub, cx, y + 20); ctx.fillStyle = muted; ctx.fillText(sub, cx, y + 20);
+  ctx.textAlign = 'left';
 }
 function renderStats() {
   renderGoal(); renderIntro(); renderRace();
@@ -1472,7 +1604,7 @@ st.animReady = true;
 // gentle motion: repaint ~30 times a second on the globe (stars, orbits) and while the lap line fills in
 GP.t0 = 1e15; // hold the line at zero until the first frames are on screen, then run the lap
 setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => { GP.t0 = performance.now() + 250; })), 50);
-if (!RM) { let last = 0; const loop = now => { requestAnimationFrame(loop); if (document.hidden || now - last < 33 || ptrs.size) return; last = now; if (st.mode === 'globe' || (view.z < 20000 && performance.now() < GP.t0 + 3800)) draw(); }; requestAnimationFrame(loop); }
+if (!RM) { let last = 0; const loop = now => { requestAnimationFrame(loop); if (document.hidden || now - last < 33 || ptrs.size || RP.on) return; last = now; if (st.mode === 'globe' || (view.z < 20000 && performance.now() < GP.t0 + 3800)) draw(); }; requestAnimationFrame(loop); }
 </script>
 
 
