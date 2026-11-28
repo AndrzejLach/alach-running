@@ -500,6 +500,25 @@ html body .lb .stage.zoomed.panning,html body .lb .stage.zoomed.panning img{curs
 html body #lbAside.min > .skyrow{display:block!important;margin-top:10px;margin-right:-154px}html body #lbAside.min > .skyrow:has(#lbSky[hidden]){display:none!important}
 html body .lb aside.min:has(> .skyrow:not([hidden])) > .lbctl{top:12px;transform:none}
 html body .lb aside.min:has(> .skyrow) h3{line-height:30px}
+/* folded bar keeps the object type and date, Photo / Labels and the photos of the night */
+html body .lb aside:not(.min) > .minmeta{display:none!important}
+html body #lbAside.min > .minmeta{display:flex!important;align-items:center;gap:6px;margin:-11px -154px 0 0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+html body #lbAside.min > #lbModes:not(:empty){display:flex!important;order:1;margin-top:0;margin-right:-154px;align-self:flex-start}   /* folded: under the thumbnails */
+html body #lbAside.min > .skyrow{order:2}
+/* Animation / Labels switches */
+html body .lb #lbModes:not(:empty){display:flex;flex-wrap:wrap;gap:6px 18px;align-self:flex-start}
+html body .lb .sw{display:inline-flex;align-items:center;gap:8px;padding:2px 0;border:0;background:none;color:var(--ink);font:500 13px var(--f-body);cursor:pointer}
+html body .lb .sw i{position:relative;width:32px;height:18px;border-radius:9px;background:var(--chip);box-shadow:inset 0 0 0 1px var(--line);transition:background .2s;flex:none}
+html body .lb .sw i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform .2s cubic-bezier(.3,0,.2,1),background .2s}
+html body .lb .sw[aria-checked="true"] i{background:var(--accent);box-shadow:none}
+html body .lb .sw[aria-checked="true"] i::after{transform:translateX(14px);background:#121518}
+html body .lb .sw:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){html body .lb .sw i,html body .lb .sw i::after{transition:none}}
+html body #lbAside.min > #lbEx:not([hidden]){display:flex!important;flex-wrap:nowrap;overflow-x:auto;margin-top:0;margin-right:-154px;padding:3px 3px 4px;scrollbar-width:thin}
+html body #lbAside.min > #lbEx button{width:44px;height:44px;flex:none}
+html body .lb aside.min > .lbctl{top:12px!important;transform:none!important}
+html body #lbAside.min > .kindtag{display:inline-flex!important;line-height:30px;min-height:30px}   /* type in the bar's header, level with the buttons */
+html body #lbAside.min > h3{line-height:1.2!important;margin:6px -154px 0 0!important;max-width:none!important;white-space:normal}   /* name uses the full width under the header */
 /* year dropdown + smaller header totals */
 html body #yearSel{width:auto;min-width:130px;height:32px;font-size:13px}
 @media (max-width:760px){html body #yearSel{width:100%;height:40px;font-size:15px}html body .fgyear{display:block}html body .fgyear .flabel{display:block;margin-bottom:6px}}
@@ -584,6 +603,7 @@ html body .lb #lbSky{background:var(--accent);color:#fff;font-weight:600}html bo
     <span class="grip" aria-hidden="true" title="Drag to move"><svg viewBox="0 0 10 16" width="10" height="16"><g fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></g></svg></span>
     <span class="kindtag" id="lbKind"></span>
     <h3 id="lbTitle"></h3>
+    <p class="minmeta" id="lbMinMeta"></p>
     <div class="row" id="lbModes"></div>
     <div class="row" id="lbTools"></div>
     <p class="exlab" id="lbExLab" hidden></p><div class="exs" id="lbEx" hidden></div>
@@ -16335,11 +16355,15 @@ function openLB(i,keepMode){
   if(two){ const c=ITEMS[cmpI]; loadInto($('#lbImg2'),c.img,fin); $('#lbImg2').alt=c.t; $('#lbCap2').textContent=fmtDate(c.date); }
   $('#lbKind').innerHTML=`<i style="background:${colorOf(it)}"></i>${it.kind}`;
   $('#lbTitle').textContent=it.t;
-  $('#lbModes').innerHTML=(md.anim||md.lab)?`<button class="btn" data-m="still" aria-pressed="${mode==='still'}">Photo</button>${md.anim?`<button class="btn" data-m="anim" aria-pressed="${mode==='anim'}">Animation</button>`:''}${md.lab?`<button class="btn" data-m="lab" aria-pressed="${mode==='lab'}" title="Features named by Skyshot">Labels</button>`:''}`:'';
+  /* Animation and Labels as on/off switches; both off = the photo */
+  const sw=(m,txt,tip)=>`<button type="button" class="sw" role="switch" data-m="${m}" aria-checked="${mode===m}"${tip?` title="${tip}"`:''}><i aria-hidden="true"></i>${txt}</button>`;
+  $('#lbModes').innerHTML=(md.anim?sw('anim','Animation'):'')+(md.lab?sw('lab','Labels','Features named by Skyshot'):'');
   const same=ITEMS.filter(x=>x.target===it.target&&x.i!==it.i);
   $('#lbTools').innerHTML=''; $('#lbTools').hidden=true;   /* "Compare with…" removed */
   let altTxt=''; if(it.ra!=null&&it.ts){ useSite(it); const [al,az]=altAz(it.ra,it.dec,lstDeg(it.ts)); altTxt=`${al.toFixed(0)}° · ${azName(az)} · from ${SITE.name}`; }
-  const rows=[['Date',fmtDate(it.date)+(it.ts?` · ${it.tsApprox?'~':''}${locT(it.ts)}`:'')],['Target',it.target],['Type',it.kind]], tech=[];
+  const whenTxt=fmtDate(it.date)+(it.ts?` · ${it.tsApprox?'~':''}${locT(it.ts)}`:'');
+  $('#lbMinMeta').textContent=whenTxt;   /* date under the name on the folded bar */
+  const rows=[['Date',whenTxt],['Target',it.target],['Type',it.kind]], tech=[];
   if(it.desc) rows.unshift(['Description',it.desc]);
   if(it.con) rows.push(['Constellation',it.con]);
   if(altTxt) rows.push(['Altitude',altTxt]);
@@ -16390,7 +16414,7 @@ function drawMini(it){
 function closeLB(){$('#lb').hidden=true;document.body.style.overflow='';cmpI=-1;zoom=false;exI=-1;}
 function stepLB(d){const v=visible();if(!v.length)return;let k=v.findIndex(x=>x.i===cur);k=(k+d+v.length)%v.length;openLB(v[k].i);}
 $('#lbClose').onclick=closeLB; $('#lbPrev').onclick=()=>stepLB(-1); $('#lbNext').onclick=()=>stepLB(1);
-$('#lbModes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(b){mode=b.dataset.m;openLB(cur,true);}});
+$('#lbModes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(b){mode=mode===b.dataset.m?'still':b.dataset.m;openLB(cur,true);}});
 $('#lbSky').onclick=()=>{const i=cur;closeLB();location.hash='sky';setView('sky');requestAnimationFrame(()=>requestAnimationFrame(()=>selectItem(i,HOME.scale*1.1)));};
 let lbDownBg=false; $('#lb').addEventListener('pointerdown',e=>{lbDownBg=e.target.id==='lb'||e.target.classList.contains('stage');});
 $('#lb').addEventListener('click',e=>{if(lbDownBg&&(e.target.id==='lb'||e.target.classList.contains('stage')))closeLB();});   /* a press that started on the panel (e.g. a drag) never closes the viewer */

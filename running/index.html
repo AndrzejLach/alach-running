@@ -913,6 +913,8 @@ function draw() {
     ctx.strokeStyle = css('--bg'); ctx.lineWidth = 6; ctx.stroke();
     ctx.strokeStyle = css('--sel'); ctx.lineWidth = 3; ctx.stroke();
     const [sx, sy] = toPx(xy[0], xy[1]); ctx.fillStyle = css('--sel'); ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fill();
+    const m = moonState(), when = m.when, lit = Math.round((1 - (m.moon[0] * m.sun[0] + m.moon[1] * m.sun[1] + m.moon[2] * m.sun[2])) / 2 * 100);
+    drawMoonInset(m.moon, m.sun, m.dist, lit, when, true);   // that day's Moon, phase as seen from Earth
   }
   // scale bar
   const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * view.cy))) * 180 / Math.PI;
@@ -1099,7 +1101,7 @@ function drawSpace(R) {
   else { g.addColorStop(0, '#fbfcfd'); g.addColorStop(0.5, '#eef1f4'); g.addColorStop(1, '#dde3e9'); }
   ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
   // camera sits above (globe.lon, globe.lat) and looks through the Earth's centre; the sky we see is around the opposite direction
-  const gmst = ((280.46061837 + 360.98564736629 * (Date.now() / 864e5 + 2440587.5 - 2451545)) % 360 + 360) % 360;
+  const gmst = moonState().gmst;   // sky turned for the same moment as the Moon
   const lo = (globe.lon + gmst) * RAD, la = globe.lat * RAD;       // camera direction in sky (equatorial) coordinates
   const d = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
   const east = [-Math.sin(lo), Math.cos(lo), 0], north = [-Math.sin(la) * Math.cos(lo), -Math.sin(la) * Math.sin(lo), Math.cos(la)];
@@ -1126,6 +1128,29 @@ function drawSpace(R) {
 // The Moon at its real position and real size for the current date and time: about 60 Earth radii away and
 // 0.273 times the Earth's size, lit from the real direction of the Sun. Low-precision lunar and solar theory
 // (Meeus / Astronomical Almanac), good to well under a degree, which is plenty at this scale.
+// The Moon is shown for: the replay's latest new place (its day), the selected run's day, or right now.
+// Runs carry a date but no clock time, so a run's day is taken at local midday (12:00 shifted by the longitude).
+function moonWhen() {
+  let d = null, lon = 0;
+  if (RP.on && RP.x && RP.x.E.length) { const e = RP.x.E[Math.max(0, RP.i - 1)]; d = new Date(e.day * 864e5).toISOString().slice(0, 10); lon = e.lon; }
+  else if (st.sel) { d = st.sel.d; lon = st.sel.lo0 || 0; }
+  if (!d) return { ms: Date.now(), d: null };
+  return { ms: Date.parse(d + 'T12:00:00Z') - lon / 15 * 36e5, d };
+}
+// What is drawn glides to a new day instead of jumping: the Moon's and the Sun's directions (so the position
+// marker and the phase) and the turn of the sky ease over about 1.2 s whenever the day shown changes.
+const gmstAt = ms => ((280.46061837 + 360.98564736629 * (ms / 864e5 + 2440587.5 - 2451545)) % 360 + 360) % 360;
+const MST = { key: null, from: null, cur: null, t0: 0, anim: false };
+function moonState() {
+  const when = moonWhen(), key = when.d || 'now', to = moonSun(when.ms); to.gmst = gmstAt(when.ms);
+  if (MST.key !== key) { MST.from = MST.cur || to; MST.key = key; MST.t0 = performance.now(); }
+  const u = RM ? 1 : Math.min(1, (performance.now() - MST.t0) / 1200), e = smooth(u);
+  const nl = (a, b) => { const v = [0, 1, 2].map(i => a[i] + (b[i] - a[i]) * e), l = Math.hypot(...v); return l > 1e-6 ? v.map(x => x / l) : b; };
+  const f = MST.from, dg = ((to.gmst - f.gmst + 540) % 360) - 180;
+  MST.cur = u >= 1 ? to : { moon: nl(f.moon, to.moon), sun: nl(f.sun, to.sun), dist: f.dist + (to.dist - f.dist) * e, gmst: (f.gmst + dg * e + 360) % 360 };
+  MST.anim = u < 1; if (MST.anim) req();   // keep repainting until it has arrived (the map has no loop of its own)
+  return { ...MST.cur, when };
+}
 function moonSun(ms) {
   const d = ms / 864e5 + 2440587.5 - 2451545, r = RAD, ob = 23.439 * r;
   const L = 218.316 + 13.176396 * d, M = (134.963 + 13.064993 * d) * r, F = (93.272 + 13.229350 * d) * r;
@@ -1167,8 +1192,8 @@ function paintMoon(g, x0, y0, r, right, up, toward, a, sun) {
 }
 // Inset in the lower left: tonight's Moon as seen from Earth (near side, lunar north up), redrawn once a minute
 moonInset = { t: -1, c: null };
-function drawMoonInset(moon, sun, dist, lit) {
-  const minute = Math.floor(Date.now() / 6e4), S = 64, dpr = Math.min(2, devicePixelRatio || 1);
+function drawMoonInset(moon, sun, dist, lit, when, onMap) {
+  const minute = MST.anim ? -performance.now() : Math.floor(when.ms / 6e4), S = 64, dpr = Math.min(2, devicePixelRatio || 1);
   if (moonInset.t !== minute || !moonInset.c) {
     const c = document.createElement('canvas'); c.width = c.height = S * dpr; const g = c.getContext('2d'); g.scale(dpr, dpr);
     const a = moon.map(v => -v), toward = a;                                    // viewer on Earth looks at the near side
@@ -1177,23 +1202,29 @@ function drawMoonInset(moon, sun, dist, lit) {
     paintMoon(g, S / 2, S / 2, S / 2 - 1, right, up, toward, a, sun);
     moonInset = { t: minute, c };
   }
-  const x = 16, y = ch - S - 14;   // bottom-left corner of the map view
+  const x = 16, y = ch - S - (onMap ? 44 : 14);   // bottom-left corner of the map view (above the scale bar on the map)
+  const title = when.d ? 'Moon on ' + new Date(when.d + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Moon tonight';
+  const toMoon = (RP.on ? RP.km || 0 : GP.done || 0) / 384400 * 100;   // distance so far against the average Earth–Moon distance (384,400 km)
+  const line3 = `I've run ${fmt(toMoon, 1)}% of the way to the Moon`;
+  if (onMap) {   // over the map: on a panel, so it reads on any imagery
+    ctx.font = '600 12px Geist, system-ui, sans-serif'; const tw = Math.max(ctx.measureText(title).width, ctx.measureText(line3).width);
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - 8, y - 8, S + 26 + tw, S + 16, 12) : ctx.rect(x - 8, y - 8, S + 26 + tw, S + 16);
+    ctx.fillStyle = css('--panel'); ctx.globalAlpha = .92; ctx.fill(); ctx.globalAlpha = 1;
+  }
   ctx.drawImage(moonInset.c, x, y, S, S);
-  ctx.font = '600 12px Geist, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = css('--fg'); ctx.fillText('Moon tonight', x + S + 10, y + S / 2 - 4);
+  ctx.font = '600 12px Geist, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = css('--fg'); ctx.fillText(title, x + S + 10, y + S / 2 - 4);
   ctx.font = '500 11px Geist, system-ui, sans-serif'; ctx.fillStyle = css('--muted'); ctx.fillText(`${lit}% lit · ${fmt(dist)} km`, x + S + 10, y + S / 2 + 12);
-  // lifetime distance against the average Earth–Moon distance (384,400 km)
-  const toMoon = (GP.done || 0) / 384400 * 100;
-  ctx.font = '600 11px Geist, system-ui, sans-serif'; ctx.fillStyle = `rgb(${css('--track')})`; ctx.fillText(`I've run ${fmt(toMoon, 1)}% of the way to the Moon`, x + S + 10, y + S / 2 + 28);
+  ctx.font = '600 11px Geist, system-ui, sans-serif'; ctx.fillStyle = `rgb(${css('--track')})`; ctx.fillText(line3, x + S + 10, y + S / 2 + 28);
 }
 function drawMoon(front) {
-  const { moon, sun, dist } = moonSun(Date.now());
+  const { moon, sun, dist, when } = moonState();
   const R = gR(), l0 = globe.lon * RAD, p0 = globe.lat * RAD;
   const dv = [Math.cos(p0) * Math.cos(l0), Math.cos(p0) * Math.sin(l0), Math.sin(p0)];          // towards the viewer
   const ev = [-Math.sin(l0), Math.cos(l0), 0], nv = [-Math.sin(p0) * Math.cos(l0), -Math.sin(p0) * Math.sin(l0), Math.cos(p0)];
   const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], k = dist / 6371;
   const x = cw / 2 + R * k * dot(moon, ev), y = ch / 2 - R * k * dot(moon, nv), depth = dot(moon, dv), r = R * 1737.4 / 6371;
   const lit = Math.round((1 - dot(moon, sun)) / 2 * 100);   // share of the disc lit as seen from Earth
-  if (front) drawMoonInset(moon, sun, dist, lit);
+  if (front) drawMoonInset(moon, sun, dist, lit, when, false);
   if ((depth >= 0) !== front) return;
   const dark = css('color-scheme') === 'dark' || matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light';
   const on = x > -r && x < cw + r && y > -r && y < ch + r;
